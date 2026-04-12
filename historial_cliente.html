@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial Cliente - Dangiola</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
+        .glass-panel { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .glass-modal { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col relative">
+
+    <header class="w-full bg-white shadow-sm border-b border-slate-50">
+        <img src="banner.png" alt="Banner Institucional" class="w-full h-auto block">
+    </header>
+
+    <section class="container mx-auto px-4 mt-8 md:mt-10 text-center">
+        <div class="flex justify-center items-center space-x-4 mb-2">
+            <a href="index.html" class="text-slate-400 hover:text-blue-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </a>
+            <h1 class="text-2xl md:text-4xl font-black text-blue-900 tracking-tighter uppercase">Ficha e Historial de Cliente</h1>
+        </div>
+        <div class="h-1 w-16 bg-blue-600 mx-auto rounded-full"></div>
+    </section>
+
+    <main class="flex-grow p-4 md:p-6 container mx-auto max-w-7xl">
+        
+        <div class="glass-panel rounded-2xl p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex-grow w-full md:w-auto relative">
+                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Buscar Empresa / Cliente:</label>
+                <input list="listaClientes" id="filtroCliente" placeholder="Ej: TOYOTA ARGENTINA..." class="border border-slate-300 rounded-lg px-4 py-3 text-base text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full font-bold shadow-sm uppercase">
+                <datalist id="listaClientes"></datalist>
+            </div>
+            <div class="mt-4 md:mt-0 pt-4 md:pt-0">
+                <button onclick="ejecutarAlgoritmoPredictivo()" class="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-3 px-8 rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center space-x-2 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span>Algoritmo Predictivo Interno</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div id="kpiAlarma" class="glass-panel rounded-2xl p-6 flex flex-col justify-center relative overflow-hidden transition-colors duration-300">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 relative z-10">Estado de Cuenta</h3>
+                <p class="text-3xl font-black relative z-10" id="txtDiasInactivo">-</p>
+                <p class="text-[10px] font-bold mt-1 relative z-10 uppercase tracking-wide" id="lblDiasInactivo">Seleccione un cliente</p>
+            </div>
+            <div class="glass-panel rounded-2xl p-6 flex flex-col justify-center">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Volumen Histórico</h3>
+                <p class="text-3xl font-black text-blue-900"><span id="kpiTotalM2">0</span> <span class="text-lg text-slate-500">m²</span></p>
+                <p class="text-xs text-slate-500 mt-1 font-medium"><span id="kpiEventosTotales">0</span> eventos registrados</p>
+            </div>
+            <div class="glass-panel rounded-2xl p-6 flex flex-col justify-center">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Modelo Favorito</h3>
+                <p class="text-xl font-black text-blue-900 truncate" id="kpiModeloFav">-</p>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Estructura más solicitada</p>
+            </div>
+            <div class="glass-panel rounded-2xl p-6 flex flex-col justify-center">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Atendido por</h3>
+                <p class="text-xl font-black text-blue-900 truncate" id="kpiVendedorFav">-</p>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Vendedor principal</p>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 mb-6">
+            <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Línea de Tiempo de Contrataciones (m²)</h3>
+            <div class="relative h-64 w-full"><canvas id="chartHistorial"></canvas></div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Registro Histórico Completo</h3>
+            </div>
+            <div class="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar rounded-lg border border-slate-100 relative">
+                <table class="w-full text-left border-collapse">
+                    <thead class="sticky top-0 z-10 shadow-sm">
+                        <tr class="bg-blue-50 text-blue-900 text-xs uppercase tracking-wider">
+                            <th class="p-3 font-bold">Fecha</th>
+                            <th class="p-3 font-bold">Ubicación</th>
+                            <th class="p-3 font-bold">Modelo</th>
+                            <th class="p-3 font-bold">Medida</th>
+                            <th class="p-3 font-bold">Vendedor</th>
+                            <th class="p-3 font-bold text-right">m²</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaVentasBody" class="text-sm text-slate-600 divide-y divide-slate-100 bg-white"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="modalIA" class="fixed inset-0 z-[2000] hidden flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm transition-opacity">
+        <div class="glass-modal rounded-3xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-gradient-to-r from-emerald-800 to-teal-800 px-6 py-4 flex justify-between items-center shadow-md">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white/20 p-2 rounded-full text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-white tracking-wide">Informe Predictivo Automático</h2>
+                </div>
+                <button onclick="cerrarModalIA()" class="text-white/70 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar bg-white/60" id="contenidoIA"></div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="cerrarModalIA()" class="bg-slate-200 text-slate-700 font-bold py-2 px-6 rounded-lg hover:bg-slate-300 transition-colors">Cerrar Análisis</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let datosCompletos = [];
+        let datosClienteActual = []; 
+        let chartHistorialInstance = null;
+
+        window.onload = () => {
+            Papa.parse("ventas_con_clientes.csv", {
+                download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                complete: function(results) {
+                    datosCompletos = results.data.filter(d => d.EVENTO && d.m2 && d.Nombre);
+                    inicializarFiltroClientes();
+                }
+            });
+
+            document.getElementById('filtroCliente').addEventListener('change', actualizarDashboard);
+            document.getElementById('filtroCliente').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') actualizarDashboard();
+            });
+        };
+
+        function inicializarFiltroClientes() {
+            let clientesUnicos = [...new Set(datosCompletos.map(d => d.Nombre.trim()))].sort();
+            let datalist = document.getElementById('listaClientes');
+            clientesUnicos.forEach(c => {
+                let opt = document.createElement('option');
+                opt.value = c;
+                datalist.appendChild(opt);
+            });
+        }
+
+        function actualizarDashboard() {
+            const clienteBuscado = document.getElementById('filtroCliente').value.toUpperCase().trim();
+            if(!clienteBuscado) return;
+
+            datosClienteActual = datosCompletos.filter(d => d.Nombre.toUpperCase().trim() === clienteBuscado);
+            datosClienteActual.sort((a, b) => new Date(b.EVENTO) - new Date(a.EVENTO)); // Más reciente primero
+
+            if (datosClienteActual.length > 0) {
+                renderKPIs(datosClienteActual);
+                renderTabla(datosClienteActual);
+                renderGrafico(datosClienteActual);
+            } else {
+                limpiarDashboard();
+            }
+        }
+
+        function limpiarDashboard() {
+            document.getElementById('kpiTotalM2').innerText = '0';
+            document.getElementById('kpiEventosTotales').innerText = '0';
+            document.getElementById('kpiModeloFav').innerText = '-';
+            document.getElementById('kpiVendedorFav').innerText = '-';
+            document.getElementById('txtDiasInactivo').innerText = '-';
+            document.getElementById('tablaVentasBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">No hay registros para este cliente.</td></tr>';
+            if (chartHistorialInstance) chartHistorialInstance.destroy();
+            resetAlarmaStyle();
+        }
+
+        function resetAlarmaStyle() {
+            const panel = document.getElementById('kpiAlarma');
+            panel.className = "glass-panel rounded-2xl p-6 flex flex-col justify-center relative overflow-hidden transition-colors duration-300";
+            document.getElementById('lblDiasInactivo').innerText = 'Días desde última compra';
+        }
+
+        function renderKPIs(datos) {
+            let totalM2 = 0;
+            let modelos = {};
+            let vendedores = {};
+            
+            let ultimaFecha = new Date(datos[0].EVENTO);
+            let hoy = new Date();
+            let diferenciaTiempo = hoy.getTime() - ultimaFecha.getTime();
+            let diasInactivo = Math.floor(diferenciaTiempo / (1000 * 3600 * 24));
+
+            datos.forEach(d => {
+                totalM2 += parseFloat(d.m2) || 0;
+                let mod = d.Modelo ? d.Modelo.trim() : 'N/A';
+                let vend = d.Vendedor ? d.Vendedor.trim() : 'N/A';
+                modelos[mod] = (modelos[mod] || 0) + 1;
+                vendedores[vend] = (vendedores[vend] || 0) + 1;
+            });
+
+            document.getElementById('kpiTotalM2').innerText = totalM2.toLocaleString('es-AR');
+            document.getElementById('kpiEventosTotales').innerText = datos.length;
+
+            let modFav = Object.keys(modelos).reduce((a, b) => modelos[a] > modelos[b] ? a : b);
+            let vendFav = Object.keys(vendedores).reduce((a, b) => vendedores[a] > vendedores[b] ? a : b);
+            
+            document.getElementById('kpiModeloFav').innerText = modFav;
+            document.getElementById('kpiVendedorFav').innerText = vendFav;
+
+            // KPIs Visuales
+            const panelAlarma = document.getElementById('kpiAlarma');
+            const txtDias = document.getElementById('txtDiasInactivo');
+            const lblDias = document.getElementById('lblDiasInactivo');
+
+            if (diasInactivo < 0) diasInactivo = 0;
+            
+            if (diasInactivo <= 90) {
+                panelAlarma.className = "bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex flex-col justify-center shadow-sm transition-colors duration-300";
+                txtDias.className = "text-3xl font-black text-emerald-600 relative z-10";
+                txtDias.innerText = diasInactivo;
+                lblDias.innerText = "Días (Cliente Activo)";
+                lblDias.className = "text-[10px] font-bold mt-1 text-emerald-500 uppercase tracking-wide";
+            } else if (diasInactivo <= 180) {
+                panelAlarma.className = "bg-amber-50 border border-amber-200 rounded-2xl p-6 flex flex-col justify-center shadow-sm transition-colors duration-300";
+                txtDias.className = "text-3xl font-black text-amber-600 relative z-10";
+                txtDias.innerText = diasInactivo;
+                lblDias.innerText = "Días (Atención requerida)";
+                lblDias.className = "text-[10px] font-bold mt-1 text-amber-500 uppercase tracking-wide";
+            } else {
+                panelAlarma.className = "bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col justify-center shadow-sm transition-colors duration-300";
+                txtDias.className = "text-3xl font-black text-red-600 relative z-10";
+                txtDias.innerText = diasInactivo;
+                lblDias.innerText = "Días (ALERTA DE ABANDONO)";
+                lblDias.className = "text-[10px] font-bold mt-1 text-red-500 uppercase tracking-wide";
+            }
+        }
+
+        function renderTabla(datos) {
+            let html = datos.map(d => `
+                <tr class="hover:bg-blue-50/50 transition-colors">
+                    <td class="p-3 font-medium text-slate-800">${d.EVENTO}</td>
+                    <td class="p-3 text-xs">${d.Ubicación || '-'}</td>
+                    <td class="p-3 font-bold text-blue-900 text-xs">${d.Modelo || '-'}</td>
+                    <td class="p-3 text-xs">${d.Medida || '-'}</td>
+                    <td class="p-3 text-xs text-slate-500 uppercase">${d.Vendedor || '-'}</td>
+                    <td class="p-3 font-black text-blue-600 text-right">${parseFloat(d.m2 || 0).toLocaleString('es-AR')}</td>
+                </tr>
+            `).join('');
+            document.getElementById('tablaVentasBody').innerHTML = html;
+        }
+
+        function renderGrafico(datos) {
+            let datosGrafico = [...datos].sort((a, b) => new Date(a.EVENTO) - new Date(b.EVENTO));
+            let labels = datosGrafico.map(d => new Date(d.EVENTO).toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }).toUpperCase());
+            let dataValues = datosGrafico.map(d => parseFloat(d.m2) || 0);
+
+            if (chartHistorialInstance) chartHistorialInstance.destroy();
+
+            const ctx = document.getElementById('chartHistorial').getContext('2d');
+            chartHistorialInstance = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ label: 'm² Contratados', data: dataValues, backgroundColor: '#0d9488', hoverBackgroundColor: '#042f2e', borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } } }
+            });
+        }
+
+        // ==========================================
+        // ALGORITMO PREDICTIVO INTERNO (Puro JavaScript)
+        // ==========================================
+        function ejecutarAlgoritmoPredictivo() {
+            const clienteSel = document.getElementById('filtroCliente').value.toUpperCase().trim();
+            const container = document.getElementById('contenidoIA');
+            
+            if(!clienteSel || datosClienteActual.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                        <p class="text-red-700 font-bold">Sin Selección</p>
+                        <p class="text-sm text-red-600">Por favor, busca y selecciona un cliente válido que tenga historial de compras.</p>
+                    </div>`;
+                abrirModalIA();
+                return;
+            }
+
+            // --- PROCESAMIENTO MATEMÁTICO ---
+            
+            // 1. Calcular Vendedor y Estructura Favorita
+            let modelos = {}; let vendedores = {}; let medidas = {};
+            let mesesCompras = [];
+            
+            // Los datos ya están ordenados: [0] es el más reciente.
+            let datosAsc = [...datosClienteActual].sort((a, b) => new Date(a.EVENTO) - new Date(b.EVENTO)); // Viejo a nuevo
+            
+            datosClienteActual.forEach(d => {
+                let mod = d.Modelo ? d.Modelo.trim() : 'N/A';
+                let vend = d.Vendedor ? d.Vendedor.trim() : 'N/A';
+                let med = d.Medida ? d.Medida.trim() : 'N/A';
+                
+                modelos[mod] = (modelos[mod] || 0) + 1;
+                vendedores[vend] = (vendedores[vend] || 0) + 1;
+                medidas[med] = (medidas[med] || 0) + 1;
+                
+                mesesCompras.push(new Date(d.EVENTO).toLocaleString('es-ES', { month: 'long' }));
+            });
+
+            // Extraer modas (más frecuentes)
+            let modFav = Object.keys(modelos).reduce((a, b) => modelos[a] > modelos[b] ? a : b);
+            let vendFav = Object.keys(vendedores).reduce((a, b) => vendedores[a] > vendedores[b] ? a : b);
+            let medFav = Object.keys(medidas).reduce((a, b) => medidas[a] > medidas[b] ? a : b);
+
+            // Determinar si hay fidelidad
+            let textoVendedor = Object.keys(vendedores).length === 1 
+                ? `El cliente es fiel, <b>siempre</b> es atendido por <b>${vendFav}</b>.`
+                : `Suele ser atendido por <b>${vendFav}</b>, aunque ha rotado entre ${Object.keys(vendedores).length} vendedores.`;
+            
+            let textoEstructura = Object.keys(modelos).length === 1
+                ? `Es de consumo estático: siempre solicita la misma estructura (<b>${modFav}</b>, medida ${medFav}).`
+                : `Su consumo es variado, pero su estructura de preferencia estadística es <b>${modFav}</b> (medida habitual: ${medFav}).`;
+
+            // 2. Calcular Periodicidad (Días entre compras)
+            let diasEntreCompras = [];
+            for (let i = 1; i < datosAsc.length; i++) {
+                let f1 = new Date(datosAsc[i-1].EVENTO);
+                let f2 = new Date(datosAsc[i].EVENTO);
+                let diffDias = Math.floor((f2 - f1) / (1000 * 600 * 24));
+                if(diffDias > 0) diasEntreCompras.push(diffDias);
+            }
+
+            let textoPeriodicidad = "";
+            let promedioDias = 0;
+            let fechaEstimadaTxt = "No calculable (requiere múltiples compras)";
+
+            if (diasEntreCompras.length > 0) {
+                promedioDias = Math.round(diasEntreCompras.reduce((a,b) => a+b, 0) / diasEntreCompras.length);
+                let promedioMeses = (promedioDias / 30).toFixed(1);
+                
+                textoPeriodicidad = `Históricamente, vuelve a contratar aproximadamente cada <b>${promedioDias} días</b> (aprox. ${promedioMeses} meses).`;
+                
+                // Calcular Próxima Fecha
+                let ultimaFecha = new Date(datosAsc[datosAsc.length - 1].EVENTO);
+                let proximaFecha = new Date(ultimaFecha);
+                proximaFecha.setDate(proximaFecha.getDate() + promedioDias);
+                fechaEstimadaTxt = proximaFecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            } else {
+                textoPeriodicidad = "Cliente de compra única registrada. Aún no hay patrón de repetición establecido.";
+            }
+
+            // 3. Estacionalidad (Meses favoritos)
+            let mesesContados = {};
+            mesesCompras.forEach(m => mesesContados[m] = (mesesContados[m] || 0) + 1);
+            let mesesFuertes = Object.entries(mesesContados).sort((a, b) => b[1] - a[1]).slice(0, 2).map(m => m[0]).join(" y ");
+
+            // 4. LÓGICA DE ALARMA DE FUGA
+            let ultimaCompraDate = new Date(datosClienteActual[0].EVENTO);
+            let hoy = new Date();
+            let diasInactivo = Math.floor((hoy - ultimaCompraDate) / (1000 * 3600 * 24));
+            
+            let bloqueAlarmaHTML = "";
+            
+            // Si el cliente demora un 30% más de su promedio histórico en comprar, salta alarma
+            let umbralCritico = promedioDias > 0 ? (promedioDias * 1.3) : 180; // Si no hay promedio, usamos 6 meses por defecto
+
+            if (diasInactivo > umbralCritico) {
+                bloqueAlarmaHTML = `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-5 rounded-xl shadow-sm my-6 animate-pulse">
+                        <div class="flex items-center space-x-2 text-red-700 mb-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            <h4 class="font-black text-lg uppercase">Alarma de Inactividad (Riesgo de Fuga)</h4>
+                        </div>
+                        <p class="text-sm text-red-800">
+                            El cliente lleva <b>${diasInactivo} días</b> sin registrar operaciones. Esto supera ampliamente su patrón histórico de compra (cada ${promedioDias} días). 
+                            <br><br><b>ACCIÓN REQUERIDA:</b> Se sugiere al vendedor ${vendFav} establecer contacto inmediato para fidelización o detectar motivos de la pausa.
+                        </p>
+                    </div>
+                `;
+            } else {
+                bloqueAlarmaHTML = `
+                    <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-xl shadow-sm my-6">
+                        <p class="text-emerald-800 text-sm font-bold">Estado Saludable:</p>
+                        <p class="text-xs text-emerald-700">El cliente está dentro de su ciclo natural de compra (${diasInactivo} días inactivo frente a un promedio de ${promedioDias} días). No requiere contacto urgente forzado.</p>
+                    </div>
+                `;
+            }
+
+            // Generar Reporte Final HTML
+            let reporteHTML = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h4 class="font-bold text-slate-800 text-sm mb-3 border-b pb-2 flex items-center space-x-2">
+                                <span class="text-teal-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg></span>
+                                <span>Patrón de Consumo</span>
+                            </h4>
+                            <p class="text-sm text-slate-600 mb-2">${textoEstructura}</p>
+                            <p class="text-sm text-slate-600">${textoVendedor}</p>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h4 class="font-bold text-slate-800 text-sm mb-3 border-b pb-2 flex items-center space-x-2">
+                                <span class="text-teal-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></span>
+                                <span>Ciclo y Estacionalidad</span>
+                            </h4>
+                            <p class="text-sm text-slate-600 mb-2">${textoPeriodicidad}</p>
+                            <p class="text-sm text-slate-600">Suele concentrar sus operaciones en los meses de <b class="capitalize">${mesesFuertes}</b>.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-teal-50 p-5 rounded-xl border border-teal-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h4 class="font-black text-teal-800 text-lg uppercase">Proyección de Próxima Venta</h4>
+                            <p class="text-sm text-teal-700 mt-1">Estimación basada en su periodicidad histórica.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-2xl font-black text-teal-900 capitalize">${fechaEstimadaTxt}</span>
+                            <span class="block text-xs font-bold text-teal-700 mt-1">Estructura Probable: ${modFav}</span>
+                        </div>
+                    </div>
+
+                    ${bloqueAlarmaHTML}
+                </div>
+            `;
+
+            container.innerHTML = reporteHTML;
+            abrirModalIA();
+        }
+
+        function abrirModalIA() { document.getElementById('modalIA').classList.remove('hidden'); }
+        function cerrarModalIA() { document.getElementById('modalIA').classList.add('hidden'); }
+    </script>
+</body>
+</html>
