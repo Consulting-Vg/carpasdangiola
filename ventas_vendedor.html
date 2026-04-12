@@ -15,6 +15,7 @@
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
         .glass-panel { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .glass-modal { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
         #mapVendedor { height: 350px; width: 100%; border-radius: 1rem; z-index: 1; }
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
@@ -22,7 +23,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col">
+<body class="text-slate-800 min-h-screen flex flex-col relative">
 
     <header class="w-full bg-white shadow-sm border-b border-slate-50">
         <img src="banner.png" alt="Banner Institucional" class="w-full h-auto block">
@@ -71,6 +72,13 @@
             </div>
         </div>
 
+        <div class="mb-6 flex justify-end">
+            <button onclick="generarReporteGerencial()" class="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all flex items-center space-x-2 shadow-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>Analizar con Asistente IA</span>
+            </button>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="glass-panel rounded-2xl p-6 flex flex-col justify-center relative overflow-hidden group">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
@@ -90,7 +98,7 @@
 
         <div class="glass-panel rounded-2xl p-4 mb-6">
             <div class="flex justify-between items-center mb-3 px-2">
-                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Impacto Territorial (Ventas Filtradas)</h3>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Impacto Territorial</h3>
                 <span class="text-xs bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full" id="indicadorMapa">Mostrando Todos</span>
             </div>
             <div id="mapVendedor" class="border border-slate-100 shadow-inner"></div>
@@ -109,7 +117,7 @@
 
         <div class="glass-panel rounded-2xl p-6 flex flex-col">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Registro Detallado de Ventas</h3>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Registro Detallado</h3>
                 <span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Scrollea para ver más</span>
             </div>
             
@@ -132,12 +140,37 @@
 
     </main>
 
+    <div id="modalIA" class="fixed inset-0 z-[2000] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+        <div class="glass-modal rounded-3xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <div class="bg-gradient-to-r from-blue-900 to-purple-900 px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white/20 p-2 rounded-full">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-white tracking-wide">Informe Gerencial IA</h2>
+                </div>
+                <button onclick="cerrarModalIA()" class="text-white/70 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto custom-scrollbar bg-white/50" id="contenidoIA">
+                </div>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="cerrarModalIA()" class="bg-slate-200 text-slate-700 font-bold py-2 px-6 rounded-lg hover:bg-slate-300 transition-colors">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="py-6 text-center text-slate-400 text-[10px] tracking-[0.2em] uppercase mt-auto">
         <p>&copy; 2026 Dangiola S.A. | Inteligencia Comercial</p>
     </footer>
 
     <script>
         let datosCompletos = [];
+        let datosActualesFiltrados = []; // Variable global para usar en la IA
         let chartEvolucionInstance = null;
         let chartEstructurasInstance = null;
         let map;
@@ -211,6 +244,8 @@
             });
 
             datosFiltrados.sort((a, b) => new Date(b.EVENTO) - new Date(a.EVENTO));
+            
+            datosActualesFiltrados = datosFiltrados; // Guardamos para la IA
 
             renderKPIs(datosFiltrados);
             renderTabla(datosFiltrados);
@@ -236,14 +271,7 @@
                 let sorted = Object.entries(diccionario).sort((a, b) => b[1] - a[1]).slice(0, 3);
                 let html = sorted.map((item, index) => {
                     let colores = ['bg-blue-600', 'bg-blue-400', 'bg-blue-300'];
-                    return `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2 truncate w-3/4">
-                            <span class="w-5 h-5 flex items-center justify-center text-[10px] text-white font-bold rounded-full ${colores[index]}">${index + 1}</span>
-                            <span class="text-sm font-bold text-slate-700 truncate">${item[0]}</span>
-                        </div>
-                        <span class="text-sm font-black text-blue-900">${item[1].toLocaleString('es-AR')} m²</span>
-                    </div>`;
+                    return `<div class="flex items-center justify-between"><div class="flex items-center space-x-2 truncate w-3/4"><span class="w-5 h-5 flex items-center justify-center text-[10px] text-white font-bold rounded-full ${colores[index]}">${index + 1}</span><span class="text-sm font-bold text-slate-700 truncate">${item[0]}</span></div><span class="text-sm font-black text-blue-900">${item[1].toLocaleString('es-AR')} m²</span></div>`;
                 }).join('');
                 document.getElementById(contenedorId).innerHTML = html || '<p class="text-xs text-slate-400">Sin datos</p>';
             }
@@ -252,17 +280,8 @@
         }
 
         function renderTabla(datos) {
-            let html = datos.map(d => `
-                <tr class="hover:bg-blue-50/50 transition-colors">
-                    <td class="p-3 font-medium text-slate-800">${d.EVENTO}</td>
-                    <td class="p-3 font-bold text-blue-600 text-xs">${d.Vendedor || '-'}</td>
-                    <td class="p-3 font-bold text-blue-900">${d.Nombre || '-'}</td>
-                    <td class="p-3 text-xs">${d.Ubicación || '-'}</td>
-                    <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold">${d.Modelo || '-'}</span></td>
-                    <td class="p-3 font-black text-blue-900 text-right">${parseFloat(d.m2 || 0).toLocaleString('es-AR')}</td>
-                </tr>
-            `).join('');
-            document.getElementById('tablaVentasBody').innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-slate-400">No se encontraron ventas para esta búsqueda.</td></tr>';
+            let html = datos.map(d => `<tr class="hover:bg-blue-50/50 transition-colors"><td class="p-3 font-medium text-slate-800">${d.EVENTO}</td><td class="p-3 font-bold text-blue-600 text-xs">${d.Vendedor || '-'}</td><td class="p-3 font-bold text-blue-900">${d.Nombre || '-'}</td><td class="p-3 text-xs">${d.Ubicación || '-'}</td><td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold">${d.Modelo || '-'}</span></td><td class="p-3 font-black text-blue-900 text-right">${parseFloat(d.m2 || 0).toLocaleString('es-AR')}</td></tr>`).join('');
+            document.getElementById('tablaVentasBody').innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-slate-400">No se encontraron ventas.</td></tr>';
         }
 
         function renderGraficos(datos) {
@@ -279,19 +298,11 @@
             let labelsFormateados = labelsLine.map(l => new Date(l + '-02').toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }).toUpperCase());
 
             if (chartEvolucionInstance) chartEvolucionInstance.destroy();
-            chartEvolucionInstance = new Chart(document.getElementById('chartEvolucion').getContext('2d'), {
-                type: 'line',
-                data: { labels: labelsFormateados, datasets: [{ label: 'Ventas (m²)', data: dataLine, borderColor: '#1e3a8a', backgroundColor: 'rgba(30, 58, 138, 0.1)', borderWidth: 3, pointBackgroundColor: '#2563eb', fill: true, tension: 0.3 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
-            });
+            chartEvolucionInstance = new Chart(document.getElementById('chartEvolucion').getContext('2d'), { type: 'line', data: { labels: labelsFormateados, datasets: [{ label: 'Ventas (m²)', data: dataLine, borderColor: '#1e3a8a', backgroundColor: 'rgba(30, 58, 138, 0.1)', borderWidth: 3, pointBackgroundColor: '#2563eb', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } } });
 
             let sortedEstr = Object.entries(ventasPorEstructura).sort((a, b) => b[1] - a[1]).slice(0, 10);
             if (chartEstructurasInstance) chartEstructurasInstance.destroy();
-            chartEstructurasInstance = new Chart(document.getElementById('chartEstructuras').getContext('2d'), {
-                type: 'bar',
-                data: { labels: sortedEstr.map(i => i[0]), datasets: [{ label: 'm²', data: sortedEstr.map(i => i[1]), backgroundColor: '#3b82f6', hoverBackgroundColor: '#1e3a8a', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
-            });
+            chartEstructurasInstance = new Chart(document.getElementById('chartEstructuras').getContext('2d'), { type: 'bar', data: { labels: sortedEstr.map(i => i[0]), datasets: [{ label: 'm²', data: sortedEstr.map(i => i[1]), backgroundColor: '#3b82f6', hoverBackgroundColor: '#1e3a8a', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } } });
         }
 
         function renderMapa(datos, vendedorSel) {
@@ -310,6 +321,147 @@
                 }
             });
             if (bounds.length > 0) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+        }
+
+        // ==========================================
+        // LÓGICA DEL MOTOR IA GERENCIAL
+        // ==========================================
+        function generarReporteGerencial() {
+            const vendedorSel = document.getElementById('filtroVendedor').value;
+            const container = document.getElementById('contenidoIA');
+            
+            if(vendedorSel === 'Todos') {
+                container.innerHTML = `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                        <p class="text-red-700 font-bold">Atención</p>
+                        <p class="text-sm text-red-600">Para realizar el análisis gerencial profundo, debes seleccionar un vendedor específico en el filtro superior (no "Todos").</p>
+                    </div>`;
+                abrirModalIA();
+                return;
+            }
+
+            if(datosActualesFiltrados.length === 0) {
+                container.innerHTML = `<p class="text-slate-500">No hay datos de ventas registrados para ${vendedorSel} en este período.</p>`;
+                abrirModalIA();
+                return;
+            }
+
+            // Procesamiento Analítico
+            let totalM2 = 0;
+            let ventasPorMes = {};
+            let ventasPorEstructura = {};
+
+            datosActualesFiltrados.forEach(d => {
+                let m2 = parseFloat(d.m2) || 0;
+                totalM2 += m2;
+                
+                let mes = d.EVENTO.substring(0, 7);
+                let modelo = d.Modelo ? d.Modelo.trim() : 'Desc. / Varios';
+                
+                ventasPorMes[mes] = (ventasPorMes[mes] || 0) + m2;
+                ventasPorEstructura[modelo] = (ventasPorEstructura[modelo] || 0) + m2;
+            });
+
+            let eventosTotales = datosActualesFiltrados.length;
+            let promedioM2 = totalM2 / eventosTotales;
+
+            // Análisis de Meses
+            let mesesOrdenados = Object.entries(ventasPorMes).sort((a, b) => b[1] - a[1]);
+            let mesFuerte = mesesOrdenados[0];
+            let mesDebil = mesesOrdenados[mesesOrdenados.length - 1];
+
+            // Análisis de Estructuras (Top y Bottom)
+            let estructurasOrdenadas = Object.entries(ventasPorEstructura).sort((a, b) => b[1] - a[1]);
+            let estFuertes = estructurasOrdenadas.slice(0, 2); // Top 2
+            let estDebiles = estructurasOrdenadas.slice(-2).reverse(); // Bottom 2
+
+            // Clasificación de Vendedor (IA Algorítmica)
+            let perfilVendedor = "";
+            let colorPerfil = "";
+            if(promedioM2 > 500) {
+                perfilVendedor = "Vendedor Corporativo / Grandes Superficies";
+                colorPerfil = "text-purple-700 bg-purple-100 border-purple-300";
+            } else if (promedioM2 > 200) {
+                perfilVendedor = "Vendedor Equilibrado / Proyectos Medios";
+                colorPerfil = "text-blue-700 bg-blue-100 border-blue-300";
+            } else {
+                perfilVendedor = "Vendedor de Volumen / Pequeñas Estructuras";
+                colorPerfil = "text-emerald-700 bg-emerald-100 border-emerald-300";
+            }
+
+            function formatMes(yyyy_mm) {
+                return new Date(yyyy_mm + '-02').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            }
+
+            // Generación del Reporte HTML
+            let reporteHTML = `
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-sm uppercase tracking-widest text-slate-400 font-bold mb-2">Perfil Analítico de: <span class="text-blue-900">${vendedorSel}</span></h3>
+                        <div class="p-4 rounded-xl border ${colorPerfil} inline-block">
+                            <p class="font-black">${perfilVendedor}</p>
+                            <p class="text-xs mt-1 opacity-80">Basado en un promedio histórico de ${promedioM2.toFixed(0)} m² por evento cerrado.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                            <div class="flex items-center space-x-2 mb-2 text-emerald-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                                <h4 class="font-bold uppercase text-xs">Picos de Actividad</h4>
+                            </div>
+                            <p class="text-sm text-slate-700">El mes de mayor facturación de estructuras fue <b class="capitalize">${formatMes(mesFuerte[0])}</b>, logrando consolidar <b>${mesFuerte[1].toLocaleString('es-AR')} m²</b>.</p>
+                        </div>
+
+                        <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                            <div class="flex items-center space-x-2 mb-2 text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>
+                                <h4 class="font-bold uppercase text-xs">Valles de Actividad</h4>
+                            </div>
+                            <p class="text-sm text-slate-700">El registro más bajo del período analizado fue en <b class="capitalize">${formatMes(mesDebil[0])}</b>, con apenas <b>${mesDebil[1].toLocaleString('es-AR')} m²</b>.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border border-slate-200 p-4 rounded-xl bg-white shadow-sm">
+                            <h4 class="font-bold text-slate-800 text-sm mb-3 border-b pb-2">Estructuras Fuertes (Más Vendidas)</h4>
+                            <ul class="space-y-2">
+                                ${estFuertes.map(e => `
+                                    <li class="flex justify-between items-center text-sm">
+                                        <span class="font-medium text-slate-600">${e[0]}</span>
+                                        <span class="font-black text-blue-600">${e[1].toLocaleString('es-AR')} m²</span>
+                                    </li>`).join('')}
+                            </ul>
+                            <p class="text-[10px] text-slate-400 mt-3 italic">Gran facilidad para posicionar estos modelos.</p>
+                        </div>
+
+                        <div class="border border-slate-200 p-4 rounded-xl bg-white shadow-sm">
+                            <h4 class="font-bold text-slate-800 text-sm mb-3 border-b pb-2">Oportunidades (Menos Vendidas)</h4>
+                            <ul class="space-y-2">
+                                ${estDebiles.map(e => `
+                                    <li class="flex justify-between items-center text-sm">
+                                        <span class="font-medium text-slate-600">${e[0]}</span>
+                                        <span class="font-black text-red-500">${e[1].toLocaleString('es-AR')} m²</span>
+                                    </li>`).join('')}
+                            </ul>
+                            <p class="text-[10px] text-slate-400 mt-3 italic">Posible necesidad de apoyo técnico o estrategia comercial para impulsar estos modelos.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = reporteHTML;
+            abrirModalIA();
+        }
+
+        function abrirModalIA() {
+            const modal = document.getElementById('modalIA');
+            modal.classList.remove('hidden');
+        }
+
+        function cerrarModalIA() {
+            const modal = document.getElementById('modalIA');
+            modal.classList.add('hidden');
         }
     </script>
 </body>
