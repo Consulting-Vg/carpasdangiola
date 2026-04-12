@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente IA - Analítica Predictiva Dangiola</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f7f9; color: #1e293b; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+        }
+        .user-msg { background: #0f172a; color: #f8fafc; align-self: flex-end; border-radius: 1.5rem 1.5rem 0.2rem 1.5rem; }
+        .ai-msg { background: white; border-left: 5px solid #1e3a8a; align-self: flex-start; border-radius: 0.5rem 1.5rem 1.5rem 1.5rem; }
+        .manager-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.25rem; margin-top: 0.75rem; }
+        .kpi-badge { font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 2rem; text-transform: uppercase; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8 h-screen flex flex-col items-center">
+    
+    <div class="w-full max-w-5xl h-full flex flex-col">
+        <div class="flex items-center justify-between mb-4 px-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-blue-900 tracking-tighter">DANGIOLA <span class="text-blue-500 text-sm">PREDICTIVE AI</span></h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Terminal de Decisiones Gerenciales</p>
+                </div>
+            </div>
+            <a href="index.html" class="text-xs font-bold text-slate-500 hover:text-blue-900 transition-colors uppercase tracking-widest">Cerrar Sesión</a>
+        </div>
+
+        <div class="glass-panel rounded-[2rem] flex-1 overflow-hidden flex flex-col border border-slate-200">
+            <div id="chatBox" class="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col gap-8">
+                <div class="ai-msg p-6 max-w-[90%] shadow-sm">
+                    <p class="text-xs font-bold text-blue-600 mb-1">NOTIFICACIÓN DEL SISTEMA</p>
+                    <p class="text-lg font-medium text-slate-800">Analista listo. Los datos de <b>ventas_con_clientes.csv</b> han sido cargados con éxito.</p>
+                    <p class="text-sm mt-2 text-slate-600">Escribe <b>"Me ayudas?"</b> para conocer las herramientas de proyección y análisis disponibles para este trimestre.</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-slate-100 flex gap-3">
+                <input type="text" id="userInput" placeholder="Ej: 'Predicción próximo mes' o 'Clientes vencidos'..." 
+                       class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-900 outline-none transition-all">
+                <button onclick="handleSend()" class="bg-blue-900 text-white px-8 rounded-2xl hover:bg-blue-800 transition-all font-bold shadow-lg flex items-center gap-2">
+                    <span>EJECUTAR</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let rawData = [];
+        let clientIntelligence = {};
+
+        // Carga y Procesamiento de Datos
+        Papa.parse("ventas_con_clientes.csv", {
+            download: true, header: true, dynamicTyping: true,
+            complete: function(results) {
+                rawData = results.data.filter(d => d.Nombre && d.EVENTO);
+                buildIntelligence();
+            }
+        });
+
+        function buildIntelligence() {
+            // Agrupar por cliente y calcular frecuencia
+            const groups = {};
+            rawData.forEach(row => {
+                if (!groups[row.Nombre]) groups[row.Nombre] = [];
+                groups[row.Nombre].push(new Date(row.EVENTO));
+            });
+
+            for (let name in groups) {
+                const dates = groups[name].sort((a,b) => a-b);
+                let avgInterval = 90; // Default: 90 días si solo hay una venta
+                
+                if (dates.length > 1) {
+                    let totalDiff = 0;
+                    for(let i=1; i<dates.length; i++) {
+                        totalDiff += (dates[i] - dates[i-1]) / (1000 * 60 * 60 * 24);
+                    }
+                    avgInterval = totalDiff / (dates.length - 1);
+                }
+
+                const lastEvent = dates[dates.length - 1];
+                const nextPredicted = new Date(lastEvent);
+                nextPredicted.setDate(lastEvent.getDate() + avgInterval);
+
+                clientIntelligence[name] = {
+                    lastSale: lastEvent,
+                    frequency: Math.round(avgInterval),
+                    nextPredicted: nextPredicted,
+                    totalEvents: dates.length,
+                    data: rawData.filter(d => d.Nombre === name)
+                };
+            }
+        }
+
+        function handleSend() {
+            const query = document.getElementById('userInput').value.trim();
+            if(!query) return;
+            appendMessage('user', query);
+            document.getElementById('userInput').value = '';
+            setTimeout(() => processQuery(query.toLowerCase()), 500);
+        }
+
+        function appendMessage(role, html) {
+            const chatBox = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = `${role === 'user' ? 'user-msg' : 'ai-msg'} p-6 max-w-[85%] shadow-sm transition-all animate-in fade-in duration-500`;
+            div.innerHTML = html;
+            chatBox.appendChild(div);
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        }
+
+        function processQuery(q) {
+            let res = "";
+            const today = new Date("2026-03-01"); // Fecha de referencia basada en tus datos
+
+            // 1. AYUDA
+            if(q.includes("ayuda")) {
+                res = `
+                    <div class="font-black text-blue-900 mb-2">MENÚ DE COMANDOS GERENCIALES</div>
+                    <div class="grid grid-cols-1 gap-2 text-sm">
+                        <div class="p-3 bg-slate-50 rounded-lg"><b>"Predicción próximo mes":</b> Proyecta ventas estimadas basadas en frecuencia.</div>
+                        <div class="p-3 bg-slate-50 rounded-lg"><b>"Clientes vencidos":</b> Lista de cuentas en riesgo de churn (sin compra en fecha prevista).</div>
+                        <div class="p-3 bg-slate-50 rounded-lg"><b>"[Nombre Cliente]":</b> Informe detallado de salud de cuenta.</div>
+                        <div class="p-3 bg-slate-50 rounded-lg"><b>"Análisis de logística":</b> Resumen de m² y zonas de mayor impacto.</div>
+                    </div>
+                `;
+            }
+            // 2. PREDICCIÓN PRÓXIMO MES
+            else if(q.includes("predicción") || q.includes("proximo mes")) {
+                const nextMonth = new Date(today);
+                nextMonth.setMonth(today.getMonth() + 1);
+                
+                let projections = Object.entries(clientIntelligence)
+                    .filter(([name, info]) => info.nextPredicted > today && info.nextPredicted <= nextMonth)
+                    .sort((a,b) => a[1].nextPredicted - b[1].nextPredicted);
+
+                res = `<div class="font-bold text-blue-900 mb-2">INFORME EJECUTIVO DE PROYECCIONES (MARZO/ABRIL 2026)</div>`;
+                res += `<p class="text-sm text-slate-600 mb-4">Basado en algoritmos de frecuencia, se identifican <b>${projections.length} oportunidades</b> críticas para el próximo periodo:</p>`;
+                
+                projections.forEach(([name, info]) => {
+                    res += `
+                    <div class="manager-card flex justify-between items-center">
+                        <div>
+                            <span class="text-[10px] font-bold text-blue-500 uppercase">Estimado: ${info.nextPredicted.toLocaleDateString()}</span>
+                            <div class="font-bold text-slate-800">${name}</div>
+                        </div>
+                        <div class="text-right">
+                            <span class="kpi-badge bg-green-100 text-green-700">Probabilidad Alta</span>
+                            <div class="text-[10px] text-slate-400 mt-1">Ciclo: cada ${info.frequency} días</div>
+                        </div>
+                    </div>`;
+                });
+                res += `<div class="mt-4 p-3 bg-blue-50 text-blue-800 text-xs rounded-lg italic"><b>Nota Gerencial:</b> Se recomienda pre-asignar stock de estructuras C20 para cubrir esta demanda proyectada.</div>`;
+            }
+            // 3. CLIENTES VENCIDOS (CHURN)
+            else if(q.includes("vencido") || q.includes("comprando")) {
+                let overdue = Object.entries(clientIntelligence)
+                    .filter(([name, info]) => info.nextPredicted < today)
+                    .sort((a,b) => a[1].nextPredicted - b[1].nextPredicted);
+
+                res = `<div class="font-bold text-red-600 mb-2 underline uppercase tracking-tight">ALERTA: CLIENTES CON PREDICCIÓN VENCIDA</div>`;
+                res += `<p class="text-xs text-slate-500 mb-4">Estas cuentas han superado su ciclo habitual de compra sin registrar nuevos eventos. Acción comercial inmediata requerida.</p>`;
+                
+                overdue.slice(0, 5).forEach(([name, info]) => {
+                    res += `
+                    <div class="manager-card border-l-4 border-l-red-500 flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-slate-800">${name}</div>
+                            <span class="text-[10px] text-red-500 font-bold uppercase underline">Vencido desde: ${info.nextPredicted.toLocaleDateString()}</span>
+                        </div>
+                        <button class="text-[10px] bg-slate-900 text-white px-3 py-1 rounded-full font-bold">LLAMAR</button>
+                    </div>`;
+                });
+            }
+            // 4. CONSULTA CLIENTE ESPECÍFICO
+            else {
+                const found = Object.entries(clientIntelligence).find(([name]) => name.toLowerCase().includes(q));
+                if(found) {
+                    const [name, info] = found;
+                    res = `
+                        <div class="font-bold text-blue-900 mb-1">${name}</div>
+                        <div class="flex gap-2 mb-4">
+                            <span class="kpi-badge bg-blue-100 text-blue-700">Score de Lealtad: ${info.totalEvents > 2 ? 'VIP' : 'ESTÁNDAR'}</span>
+                            <span class="kpi-badge bg-slate-100 text-slate-600">Eventos: ${info.totalEvents}</span>
+                        </div>
+                        <div class="text-sm grid grid-cols-2 gap-4">
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <p class="text-[10px] uppercase text-slate-400 font-bold">Último Evento</p>
+                                <p class="font-bold">${info.lastSale.toLocaleDateString()}</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <p class="text-[10px] uppercase text-slate-400 font-bold">Próxima Venta Est.</p>
+                                <p class="font-bold text-blue-600">${info.nextPredicted.toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    res = "No se encontraron datos específicos. Intenta con un nombre de cliente o escribe 'Me ayudas?'";
+                }
+            }
+
+            appendMessage('ai', res);
+        }
+    </script>
+</body>
+</html>
