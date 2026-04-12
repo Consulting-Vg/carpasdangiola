@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Gestión Comercial - Dangiola</title>
+    <title>Dashboard Analítico de Ventas - Dangiola</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -12,89 +12,91 @@
     <style>
         body {
             font-family: 'Roboto', sans-serif;
+            background-color: #ffffff; /* Fondo Blanco */
         }
-        /* Efecto Glassmorphism personalizado para asegurar compatibilidad */
+        /* Glassmorphism sobre fondo blanco */
         .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8); /* Borde suave slate-200 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
         }
         .glass-card:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(59, 130, 246, 0.3); /* Resalte en azul institucional */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
         .glass-icon-bg {
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            background: rgba(59, 130, 246, 0.1); /* Azul institucional muy suave */
+            color: #1e3a8a; /* Azul oscuro institucional (blue-900) */
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 text-white min-h-screen flex flex-col">
+<body class="text-slate-800 min-h-screen flex flex-col">
 
-    <header class="w-full relative shadow-2xl z-10 border-b border-white/10">
-        <div class="w-full h-56 md:h-72 relative overflow-hidden">
-            <img src="banner.png" alt="Banner Dangiola" class="w-full h-full object-cover object-center">
-            
-            <div class="absolute inset-0 bg-blue-950/40 backdrop-blur-[2px]"></div>
-            
-            <div class="absolute bottom-0 left-0 p-6 md:p-8 w-full bg-gradient-to-t from-blue-950 to-transparent">
-                <h1 class="text-3xl md:text-5xl font-black text-white tracking-wide drop-shadow-md">Panel de Control</h1>
-                <p class="text-blue-100 mt-2 text-lg font-light tracking-wider">Gestión Comercial y Analítica de Eventos</p>
-            </div>
+    <header class="w-full bg-white border-b border-slate-100 shadow-sm">
+        <div class="w-full h-32 md:h-48 flex justify-center items-center py-4 px-6">
+            <img src="banner.png" alt="Banner Institucional" class="w-full h-full object-contain">
         </div>
     </header>
 
-    <main class="container mx-auto px-4 py-12 flex-grow relative z-10">
+    <section class="container mx-auto px-4 mt-10 text-center">
+        <h1 class="text-3xl md:text-4xl font-black text-blue-900 tracking-tight uppercase">
+            Dashboard Analítico de Ventas
+        </h1>
+        <div class="h-1 w-24 bg-blue-600 mx-auto mt-4 rounded-full"></div>
+    </section>
+
+    <main class="container mx-auto px-4 py-12 flex-grow">
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             
             <a href="mapa.html" class="glass-card group flex flex-col items-center p-8 rounded-2xl transform hover:-translate-y-2 transition-all duration-300">
-                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg text-white rounded-full mb-5 group-hover:scale-110 transition-transform duration-300">
+                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg rounded-full mb-5 group-hover:bg-blue-900 group-hover:text-white transition-all duration-300">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </div>
-                <h2 class="text-xl font-bold text-white mb-2 tracking-wide">Mapa de Clientes</h2>
-                <p class="text-blue-200 text-center text-sm font-light leading-relaxed">Geolocalización y distribución territorial de eventos.</p>
+                <h2 class="text-xl font-bold text-blue-900 mb-2">Mapa de Clientes</h2>
+                <p class="text-slate-500 text-center text-sm font-light">Geolocalización y distribución territorial.</p>
             </a>
 
             <a href="ventas_general.html" class="glass-card group flex flex-col items-center p-8 rounded-2xl transform hover:-translate-y-2 transition-all duration-300">
-                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg text-white rounded-full mb-5 group-hover:scale-110 transition-transform duration-300">
+                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg rounded-full mb-5 group-hover:bg-blue-900 group-hover:text-white transition-all duration-300">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                 </div>
-                <h2 class="text-xl font-bold text-white mb-2 tracking-wide">Ventas General</h2>
-                <p class="text-blue-200 text-center text-sm font-light leading-relaxed">Evolución de m² mensuales y métricas globales.</p>
+                <h2 class="text-xl font-bold text-blue-900 mb-2">Ventas General</h2>
+                <p class="text-slate-500 text-center text-sm font-light">Evolución mensual y métricas globales.</p>
             </a>
 
             <a href="ventas_vendedor.html" class="glass-card group flex flex-col items-center p-8 rounded-2xl transform hover:-translate-y-2 transition-all duration-300">
-                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg text-white rounded-full mb-5 group-hover:scale-110 transition-transform duration-300">
+                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg rounded-full mb-5 group-hover:bg-blue-900 group-hover:text-white transition-all duration-300">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 </div>
-                <h2 class="text-xl font-bold text-white mb-2 tracking-wide">Ventas por Vendedor</h2>
-                <p class="text-blue-200 text-center text-sm font-light leading-relaxed">Rendimiento, ranking y comparativas del equipo.</p>
+                <h2 class="text-xl font-bold text-blue-900 mb-2">Ventas por Vendedor</h2>
+                <p class="text-slate-500 text-center text-sm font-light">Rendimiento y ranking del equipo.</p>
             </a>
 
             <a href="historial_cliente.html" class="glass-card group flex flex-col items-center p-8 rounded-2xl transform hover:-translate-y-2 transition-all duration-300 lg:col-start-2 lg:col-span-1">
-                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg text-white rounded-full mb-5 group-hover:scale-110 transition-transform duration-300">
+                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg rounded-full mb-5 group-hover:bg-blue-900 group-hover:text-white transition-all duration-300">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
-                <h2 class="text-xl font-bold text-white mb-2 tracking-wide">Historial Cliente</h2>
-                <p class="text-blue-200 text-center text-sm font-light leading-relaxed">Ficha detallada, frecuencia de compra y alarmas.</p>
+                <h2 class="text-xl font-bold text-blue-900 mb-2">Historial Cliente</h2>
+                <p class="text-slate-500 text-center text-sm font-light">Ficha detallada y frecuencia.</p>
             </a>
 
             <a href="asistente_ia.html" class="glass-card group flex flex-col items-center p-8 rounded-2xl transform hover:-translate-y-2 transition-all duration-300 lg:col-span-1">
-                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg text-white rounded-full mb-5 group-hover:scale-110 transition-transform duration-300">
+                <div class="w-16 h-16 flex items-center justify-center glass-icon-bg rounded-full mb-5 group-hover:bg-blue-900 group-hover:text-white transition-all duration-300">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
-                <h2 class="text-xl font-bold text-white mb-2 tracking-wide">Asistente IA</h2>
-                <p class="text-blue-200 text-center text-sm font-light leading-relaxed">Proyecciones y análisis predictivo de tendencias.</p>
+                <h2 class="text-xl font-bold text-blue-900 mb-2">Asistente IA</h2>
+                <p class="text-slate-500 text-center text-sm font-light">Proyecciones y análisis predictivo.</p>
             </a>
 
         </div>
     </main>
 
-    <footer class="mt-auto py-6 text-center text-sm text-blue-300 border-t border-white/10 glass-card mx-4 mb-4 rounded-xl">
-        <p>&copy; 2026 Portal de Gestión Comercial.</p>
+    <footer class="mt-auto py-6 text-center text-slate-400 text-xs border-t border-slate-50">
+        <p>&copy; 2026 Portal de Gestión Comercial. Dangiola S.A.</p>
     </footer>
 
 </body>
