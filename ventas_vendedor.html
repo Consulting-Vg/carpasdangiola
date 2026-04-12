@@ -3,29 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ventas General - Dangiola</title>
+    <title>Rendimiento por Vendedor - Dangiola</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
-        
-        /* Estilo Glassmorphism para los paneles */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Scrollbar personalizado */
+        .glass-panel { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        #mapVendedor { height: 350px; width: 100%; border-radius: 1rem; z-index: 1; }
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -34,39 +24,49 @@
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col">
 
-    <header class="w-full bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center shadow-sm relative z-50">
-        <div class="flex items-center space-x-4">
-            <a href="index.html" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-blue-900" title="Volver al Inicio">
+    <header class="w-full bg-white shadow-sm border-b border-slate-50">
+        <img src="banner.png" alt="Banner Institucional" class="w-full h-auto block">
+    </header>
+
+    <section class="container mx-auto px-4 mt-8 md:mt-10 text-center">
+        <div class="flex justify-center items-center space-x-4 mb-2">
+            <a href="index.html" class="text-slate-400 hover:text-blue-600 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </a>
-            <h1 class="text-xl font-black text-blue-900 uppercase tracking-tighter">Control General de Ventas</h1>
+            <h1 class="text-2xl md:text-4xl font-black text-blue-900 tracking-tighter uppercase">Rendimiento Comercial</h1>
         </div>
-        <div class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest">Dangiola S.A. | Analítica</div>
-    </header>
+        <div class="h-1 w-16 bg-blue-600 mx-auto rounded-full"></div>
+    </section>
 
     <main class="flex-grow p-4 md:p-6 container mx-auto max-w-7xl">
         
-        <div class="glass-panel rounded-2xl p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="flex items-center space-x-2 text-blue-900">
+        <div class="glass-panel rounded-2xl p-4 mb-6 flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-2 text-blue-900 mb-2 lg:mb-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
                 <span class="font-bold uppercase tracking-wide text-sm">Filtros:</span>
             </div>
             
-            <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <div class="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto justify-end">
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
-                    <input type="text" id="filtroCliente" placeholder="Buscar Cliente..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white/50 focus:outline-none focus:border-blue-500 w-full sm:w-48 font-bold placeholder-slate-400">
+                    <select id="filtroVendedor" class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:border-blue-500 w-full sm:w-48 font-bold">
+                        <option value="Todos">TODOS LOS VENDEDORES</option>
+                    </select>
                 </div>
                 
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <input type="text" id="filtroCliente" placeholder="Buscar Cliente..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white/50 focus:outline-none focus:border-blue-500 w-full sm:w-40 font-bold placeholder-slate-400">
+                </div>
+
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
                     <label class="text-xs font-bold text-slate-500 uppercase">Desde:</label>
-                    <input type="date" id="fechaInicio" class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white/50 focus:outline-none focus:border-blue-500 w-full sm:w-auto">
+                    <input type="date" id="fechaInicio" class="border border-slate-200 rounded-lg px-2 py-2 text-sm text-slate-700 bg-white/50 focus:outline-none focus:border-blue-500 w-full sm:w-auto">
                 </div>
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
                     <label class="text-xs font-bold text-slate-500 uppercase">Hasta:</label>
-                    <input type="date" id="fechaFin" class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white/50 focus:outline-none focus:border-blue-500 w-full sm:w-auto">
+                    <input type="date" id="fechaFin" class="border border-slate-200 rounded-lg px-2 py-2 text-sm text-slate-700 bg-white/50 focus:outline-none focus:border-blue-500 w-full sm:w-auto">
                 </div>
                 <button id="btnFiltrar" class="w-full sm:w-auto bg-blue-900 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-800 transition-colors text-sm shadow-md">
-                    Aplicar Filtros
+                    Actualizar
                 </button>
             </div>
         </div>
@@ -74,38 +74,42 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="glass-panel rounded-2xl p-6 flex flex-col justify-center relative overflow-hidden group">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Total Ventas (m²)</h3>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Ventas Filtradas (m²)</h3>
                 <p class="text-4xl font-black text-blue-900 relative z-10" id="kpiTotalVentas">0</p>
-                <p class="text-xs text-slate-500 mt-2 font-medium relative z-10"><span id="kpiConteoEventos">0</span> eventos registrados</p>
+                <p class="text-xs text-slate-500 mt-2 font-medium relative z-10"><span id="kpiConteoEventos">0</span> eventos cerrados</p>
             </div>
             <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Top 3 Mejores Clientes</h3>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Top 3 Clientes</h3>
                 <div id="kpiTopClientes" class="space-y-2"></div>
             </div>
             <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Top 3 Estructuras Más Vendidas</h3>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Top 3 Estructuras</h3>
                 <div id="kpiTopEstructuras" class="space-y-2"></div>
             </div>
         </div>
 
+        <div class="glass-panel rounded-2xl p-4 mb-6">
+            <div class="flex justify-between items-center mb-3 px-2">
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Impacto Territorial (Ventas Filtradas)</h3>
+                <span class="text-xs bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full" id="indicadorMapa">Mostrando Todos</span>
+            </div>
+            <div id="mapVendedor" class="border border-slate-100 shadow-inner"></div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div class="glass-panel rounded-2xl p-6">
-                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Evolución de Ventas en el Tiempo (m²)</h3>
-                <div class="relative h-64 w-full">
-                    <canvas id="chartEvolucion"></canvas>
-                </div>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Evolución Comercial (m²)</h3>
+                <div class="relative h-64 w-full"><canvas id="chartEvolucion"></canvas></div>
             </div>
             <div class="glass-panel rounded-2xl p-6">
-                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Top 10 Modelos de Estructuras (m²)</h3>
-                <div class="relative h-64 w-full">
-                    <canvas id="chartEstructuras"></canvas>
-                </div>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Top 10 Modelos (m²)</h3>
+                <div class="relative h-64 w-full"><canvas id="chartEstructuras"></canvas></div>
             </div>
         </div>
 
         <div class="glass-panel rounded-2xl p-6 flex flex-col">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Detalle de Ventas del Período</h3>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Registro Detallado de Ventas</h3>
                 <span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Scrollea para ver más</span>
             </div>
             
@@ -113,52 +117,70 @@
                 <table class="w-full text-left border-collapse">
                     <thead class="sticky top-0 z-10 shadow-sm">
                         <tr class="bg-blue-50 text-blue-900 text-xs uppercase tracking-wider">
-                            <th class="p-3 font-bold">Fecha Evento</th>
+                            <th class="p-3 font-bold">Fecha</th>
+                            <th class="p-3 font-bold">Vendedor</th>
                             <th class="p-3 font-bold">Cliente</th>
                             <th class="p-3 font-bold">Ubicación</th>
                             <th class="p-3 font-bold">Modelo</th>
-                            <th class="p-3 font-bold">Medida</th>
                             <th class="p-3 font-bold text-right">m²</th>
                         </tr>
                     </thead>
-                    <tbody id="tablaVentasBody" class="text-sm text-slate-600 divide-y divide-slate-100 bg-white">
-                        </tbody>
+                    <tbody id="tablaVentasBody" class="text-sm text-slate-600 divide-y divide-slate-100 bg-white"></tbody>
                 </table>
             </div>
         </div>
 
     </main>
 
+    <footer class="py-6 text-center text-slate-400 text-[10px] tracking-[0.2em] uppercase mt-auto">
+        <p>&copy; 2026 Dangiola S.A. | Inteligencia Comercial</p>
+    </footer>
+
     <script>
         let datosCompletos = [];
         let chartEvolucionInstance = null;
         let chartEstructurasInstance = null;
+        let map;
+        let markersLayer;
 
         window.onload = () => {
+            initMap();
             Papa.parse("ventas_con_clientes.csv", {
-                download: true,
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
+                download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(results) {
                     datosCompletos = results.data.filter(d => d.EVENTO && d.m2 && typeof d.EVENTO === 'string');
-                    configurarFechasPorDefecto();
+                    configurarFiltrosIniciales();
                 }
             });
 
             document.getElementById('btnFiltrar').addEventListener('click', actualizarDashboard);
-            // Hacer que el buscador de cliente funcione al presionar Enter
+            document.getElementById('filtroVendedor').addEventListener('change', actualizarDashboard);
             document.getElementById('filtroCliente').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') actualizarDashboard();
             });
         };
 
-        function configurarFechasPorDefecto() {
+        function initMap() {
+            map = L.map('mapVendedor', { zoomControl: false }).setView([-34.6037, -58.3816], 5);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+            markersLayer = L.layerGroup().addTo(map);
+        }
+
+        function configurarFiltrosIniciales() {
             if (datosCompletos.length === 0) return;
+
+            let vendedores = [...new Set(datosCompletos.map(d => d.Vendedor ? d.Vendedor.trim() : null).filter(v => v))];
+            let select = document.getElementById('filtroVendedor');
+            vendedores.sort().forEach(v => {
+                let opt = document.createElement('option');
+                opt.value = v; opt.innerText = v.toUpperCase();
+                select.appendChild(opt);
+            });
+
             let fechas = datosCompletos.map(d => new Date(d.EVENTO).getTime()).filter(t => !isNaN(t));
             let maxDate = new Date(Math.max(...fechas));
             let fechaFinStr = maxDate.toISOString().split('T')[0];
-            
             let minDate = new Date(maxDate);
             minDate.setFullYear(minDate.getFullYear() - 1);
             let fechaInicioStr = minDate.toISOString().split('T')[0];
@@ -172,28 +194,28 @@
         function actualizarDashboard() {
             const fechaInicio = new Date(document.getElementById('fechaInicio').value);
             const fechaFin = new Date(document.getElementById('fechaFin').value);
+            const vendedorSel = document.getElementById('filtroVendedor').value;
             const clienteBuscado = document.getElementById('filtroCliente').value.toLowerCase().trim();
             
             let fechaFinLimite = new Date(fechaFin);
             fechaFinLimite.setDate(fechaFinLimite.getDate() + 1);
 
-            // Filtrar datos (Fechas + Cliente)
             let datosFiltrados = datosCompletos.filter(d => {
                 let fechaEvento = new Date(d.EVENTO);
                 let cumpleFecha = fechaEvento >= fechaInicio && fechaEvento < fechaFinLimite;
-                
+                let cumpleVendedor = vendedorSel === 'Todos' || (d.Vendedor && d.Vendedor.trim() === vendedorSel);
                 let nombreCliente = d.Nombre ? d.Nombre.toLowerCase() : "";
                 let cumpleCliente = clienteBuscado === "" || nombreCliente.includes(clienteBuscado);
                 
-                return cumpleFecha && cumpleCliente;
+                return cumpleFecha && cumpleVendedor && cumpleCliente;
             });
 
             datosFiltrados.sort((a, b) => new Date(b.EVENTO) - new Date(a.EVENTO));
 
             renderKPIs(datosFiltrados);
             renderTabla(datosFiltrados);
-            renderGraficoEvolucion(datosFiltrados);
-            renderGraficoEstructuras(datosFiltrados);
+            renderGraficos(datosFiltrados);
+            renderMapa(datosFiltrados, vendedorSel);
         }
 
         function renderKPIs(datos) {
@@ -201,14 +223,11 @@
             document.getElementById('kpiTotalVentas').innerText = totalM2.toLocaleString('es-AR');
             document.getElementById('kpiConteoEventos').innerText = datos.length;
 
-            let ventasPorCliente = {};
-            let ventasPorEstructura = {};
-
+            let ventasPorCliente = {}, ventasPorEstructura = {};
             datos.forEach(d => {
                 let m2 = parseFloat(d.m2) || 0;
                 let cliente = d.Nombre ? d.Nombre.trim() : 'Sin Cliente';
                 let modelo = d.Modelo ? d.Modelo.trim() : 'Sin Modelo';
-
                 ventasPorCliente[cliente] = (ventasPorCliente[cliente] || 0) + m2;
                 ventasPorEstructura[modelo] = (ventasPorEstructura[modelo] || 0) + m2;
             });
@@ -226,9 +245,8 @@
                         <span class="text-sm font-black text-blue-900">${item[1].toLocaleString('es-AR')} m²</span>
                     </div>`;
                 }).join('');
-                document.getElementById(contenedorId).innerHTML = html || '<p class="text-xs text-slate-400">No hay datos suficientes</p>';
+                document.getElementById(contenedorId).innerHTML = html || '<p class="text-xs text-slate-400">Sin datos</p>';
             }
-
             generarTopHTML(ventasPorCliente, 'kpiTopClientes');
             generarTopHTML(ventasPorEstructura, 'kpiTopEstructuras');
         }
@@ -237,63 +255,61 @@
             let html = datos.map(d => `
                 <tr class="hover:bg-blue-50/50 transition-colors">
                     <td class="p-3 font-medium text-slate-800">${d.EVENTO}</td>
+                    <td class="p-3 font-bold text-blue-600 text-xs">${d.Vendedor || '-'}</td>
                     <td class="p-3 font-bold text-blue-900">${d.Nombre || '-'}</td>
-                    <td class="p-3">${d.Ubicación || '-'}</td>
-                    <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">${d.Modelo || '-'}</span></td>
-                    <td class="p-3 text-xs">${d.Medida || '-'}</td>
+                    <td class="p-3 text-xs">${d.Ubicación || '-'}</td>
+                    <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold">${d.Modelo || '-'}</span></td>
                     <td class="p-3 font-black text-blue-900 text-right">${parseFloat(d.m2 || 0).toLocaleString('es-AR')}</td>
                 </tr>
             `).join('');
-            
             document.getElementById('tablaVentasBody').innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-slate-400">No se encontraron ventas para esta búsqueda.</td></tr>';
         }
 
-        function renderGraficoEvolucion(datos) {
-            let ventasPorMes = {};
+        function renderGraficos(datos) {
+            let ventasPorMes = {}, ventasPorEstructura = {};
             datos.forEach(d => {
                 let mes = d.EVENTO.substring(0, 7);
+                let modelo = d.Modelo ? d.Modelo.trim() : 'Sin Modelo';
                 ventasPorMes[mes] = (ventasPorMes[mes] || 0) + (parseFloat(d.m2) || 0);
+                ventasPorEstructura[modelo] = (ventasPorEstructura[modelo] || 0) + (parseFloat(d.m2) || 0);
             });
 
-            let labels = Object.keys(ventasPorMes).sort();
-            let dataValues = labels.map(l => ventasPorMes[l]);
-            let labelsFormateados = labels.map(l => new Date(l + '-02').toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }).toUpperCase());
+            let labelsLine = Object.keys(ventasPorMes).sort();
+            let dataLine = labelsLine.map(l => ventasPorMes[l]);
+            let labelsFormateados = labelsLine.map(l => new Date(l + '-02').toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }).toUpperCase());
 
             if (chartEvolucionInstance) chartEvolucionInstance.destroy();
-
-            const ctx = document.getElementById('chartEvolucion').getContext('2d');
-            chartEvolucionInstance = new Chart(ctx, {
+            chartEvolucionInstance = new Chart(document.getElementById('chartEvolucion').getContext('2d'), {
                 type: 'line',
-                data: {
-                    labels: labelsFormateados,
-                    datasets: [{
-                        label: 'Ventas (m²)', data: dataValues, borderColor: '#1e3a8a', backgroundColor: 'rgba(30, 58, 138, 0.1)', borderWidth: 3, pointBackgroundColor: '#2563eb', fill: true, tension: 0.3
-                    }]
-                },
+                data: { labels: labelsFormateados, datasets: [{ label: 'Ventas (m²)', data: dataLine, borderColor: '#1e3a8a', backgroundColor: 'rgba(30, 58, 138, 0.1)', borderWidth: 3, pointBackgroundColor: '#2563eb', fill: true, tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+            });
+
+            let sortedEstr = Object.entries(ventasPorEstructura).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            if (chartEstructurasInstance) chartEstructurasInstance.destroy();
+            chartEstructurasInstance = new Chart(document.getElementById('chartEstructuras').getContext('2d'), {
+                type: 'bar',
+                data: { labels: sortedEstr.map(i => i[0]), datasets: [{ label: 'm²', data: sortedEstr.map(i => i[1]), backgroundColor: '#3b82f6', hoverBackgroundColor: '#1e3a8a', borderRadius: 4 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
             });
         }
 
-        function renderGraficoEstructuras(datos) {
-            let ventasPorEstructura = {};
+        function renderMapa(datos, vendedorSel) {
+            markersLayer.clearLayers();
+            document.getElementById('indicadorMapa').innerText = vendedorSel === 'Todos' ? 'Mostrando todo el equipo' : `Vendedor: ${vendedorSel.toUpperCase()}`;
+
+            let bounds = [];
             datos.forEach(d => {
-                let modelo = d.Modelo ? d.Modelo.trim() : 'Sin Modelo';
-                ventasPorEstructura[modelo] = (ventasPorEstructura[modelo] || 0) + (parseFloat(d.m2) || 0);
+                if(d.Latitud && d.Longitud && d.Latitud !== 0) {
+                    let lat = parseFloat(d.Latitud);
+                    let lng = parseFloat(d.Longitud);
+                    bounds.push([lat, lng]);
+                    let markerColor = vendedorSel === 'Todos' ? '#64748b' : '#ef4444'; 
+                    let m = L.circleMarker([lat, lng], { radius: 7, fillColor: markerColor, color: '#fff', weight: 2, fillOpacity: 0.9 }).addTo(markersLayer);
+                    m.bindPopup(`<div class="font-sans"><p class="text-[10px] font-bold text-blue-600 mb-1">${d.EVENTO}</p><h3 class="text-sm font-black text-slate-800 leading-tight">${d.Nombre || 'Cliente'}</h3><p class="text-xs text-slate-500 mt-1"><b>Mod:</b> ${d.Modelo}</p><p class="text-xs text-slate-500"><b>m²:</b> ${d.m2}</p></div>`);
+                }
             });
-
-            let sorted = Object.entries(ventasPorEstructura).sort((a, b) => b[1] - a[1]).slice(0, 10);
-            
-            if (chartEstructurasInstance) chartEstructurasInstance.destroy();
-
-            const ctx = document.getElementById('chartEstructuras').getContext('2d');
-            chartEstructurasInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sorted.map(item => item[0]),
-                    datasets: [{ label: 'm²', data: sorted.map(item => item[1]), backgroundColor: '#3b82f6', hoverBackgroundColor: '#1e3a8a', borderRadius: 4 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
-            });
+            if (bounds.length > 0) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
         }
     </script>
 </body>
