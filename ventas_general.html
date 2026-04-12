@@ -6,17 +6,12 @@
     <title>Ventas General - Dangiola</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
-        
-        /* Estilo Glassmorphism para los paneles */
         .glass-panel {
             background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(12px);
@@ -24,8 +19,6 @@
             border: 1px solid rgba(226, 232, 240, 0.8);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         }
-
-        /* Scrollbar personalizado */
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -112,17 +105,18 @@
             <div class="overflow-x-auto overflow-y-auto max-h-[600px] custom-scrollbar rounded-lg border border-slate-100 relative">
                 <table class="w-full text-left border-collapse">
                     <thead class="sticky top-0 z-10 shadow-sm">
-                        <tr class="bg-blue-50 text-blue-900 text-xs uppercase tracking-wider">
-                            <th class="p-3 font-bold">Fecha Evento</th>
+                        <tr class="bg-blue-50 text-blue-900 text-[10px] uppercase tracking-wider">
+                            <th class="p-3 font-bold">Armado</th>
+                            <th class="p-3 font-bold">Evento</th>
+                            <th class="p-3 font-bold">Desarme</th>
                             <th class="p-3 font-bold">Cliente</th>
                             <th class="p-3 font-bold">Ubicación</th>
                             <th class="p-3 font-bold">Modelo</th>
-                            <th class="p-3 font-bold">Medida</th>
                             <th class="p-3 font-bold text-right">m²</th>
                         </tr>
                     </thead>
                     <tbody id="tablaVentasBody" class="text-sm text-slate-600 divide-y divide-slate-100 bg-white">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -147,7 +141,6 @@
             });
 
             document.getElementById('btnFiltrar').addEventListener('click', actualizarDashboard);
-            // Hacer que el buscador de cliente funcione al presionar Enter
             document.getElementById('filtroCliente').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') actualizarDashboard();
             });
@@ -177,14 +170,11 @@
             let fechaFinLimite = new Date(fechaFin);
             fechaFinLimite.setDate(fechaFinLimite.getDate() + 1);
 
-            // Filtrar datos (Fechas + Cliente)
             let datosFiltrados = datosCompletos.filter(d => {
                 let fechaEvento = new Date(d.EVENTO);
                 let cumpleFecha = fechaEvento >= fechaInicio && fechaEvento < fechaFinLimite;
-                
                 let nombreCliente = d.Nombre ? d.Nombre.toLowerCase() : "";
                 let cumpleCliente = clienteBuscado === "" || nombreCliente.includes(clienteBuscado);
-                
                 return cumpleFecha && cumpleCliente;
             });
 
@@ -208,7 +198,6 @@
                 let m2 = parseFloat(d.m2) || 0;
                 let cliente = d.Nombre ? d.Nombre.trim() : 'Sin Cliente';
                 let modelo = d.Modelo ? d.Modelo.trim() : 'Sin Modelo';
-
                 ventasPorCliente[cliente] = (ventasPorCliente[cliente] || 0) + m2;
                 ventasPorEstructura[modelo] = (ventasPorEstructura[modelo] || 0) + m2;
             });
@@ -235,17 +224,18 @@
 
         function renderTabla(datos) {
             let html = datos.map(d => `
-                <tr class="hover:bg-blue-50/50 transition-colors">
-                    <td class="p-3 font-medium text-slate-800">${d.EVENTO}</td>
+                <tr class="hover:bg-blue-50/50 transition-colors text-[13px]">
+                    <td class="p-3 text-slate-500">${d.ARMADO || '-'}</td>
+                    <td class="p-3 font-bold text-slate-800">${d.EVENTO}</td>
+                    <td class="p-3 text-slate-500">${d.DESARME || '-'}</td>
                     <td class="p-3 font-bold text-blue-900">${d.Nombre || '-'}</td>
                     <td class="p-3">${d.Ubicación || '-'}</td>
-                    <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">${d.Modelo || '-'}</span></td>
-                    <td class="p-3 text-xs">${d.Medida || '-'}</td>
+                    <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[11px] font-bold">${d.Modelo || '-'}</span></td>
                     <td class="p-3 font-black text-blue-900 text-right">${parseFloat(d.m2 || 0).toLocaleString('es-AR')}</td>
                 </tr>
             `).join('');
             
-            document.getElementById('tablaVentasBody').innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-slate-400">No se encontraron ventas para esta búsqueda.</td></tr>';
+            document.getElementById('tablaVentasBody').innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-slate-400">No se encontraron ventas para esta búsqueda.</td></tr>';
         }
 
         function renderGraficoEvolucion(datos) {
@@ -254,13 +244,10 @@
                 let mes = d.EVENTO.substring(0, 7);
                 ventasPorMes[mes] = (ventasPorMes[mes] || 0) + (parseFloat(d.m2) || 0);
             });
-
             let labels = Object.keys(ventasPorMes).sort();
             let dataValues = labels.map(l => ventasPorMes[l]);
             let labelsFormateados = labels.map(l => new Date(l + '-02').toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }).toUpperCase());
-
             if (chartEvolucionInstance) chartEvolucionInstance.destroy();
-
             const ctx = document.getElementById('chartEvolucion').getContext('2d');
             chartEvolucionInstance = new Chart(ctx, {
                 type: 'line',
@@ -280,11 +267,8 @@
                 let modelo = d.Modelo ? d.Modelo.trim() : 'Sin Modelo';
                 ventasPorEstructura[modelo] = (ventasPorEstructura[modelo] || 0) + (parseFloat(d.m2) || 0);
             });
-
             let sorted = Object.entries(ventasPorEstructura).sort((a, b) => b[1] - a[1]).slice(0, 10);
-            
             if (chartEstructurasInstance) chartEstructurasInstance.destroy();
-
             const ctx = document.getElementById('chartEstructuras').getContext('2d');
             chartEstructurasInstance = new Chart(ctx, {
                 type: 'bar',
