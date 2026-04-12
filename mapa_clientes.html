@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Clientes - Dangiola</title>
+    <title>Mapa Logístico - Dangiola</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -17,25 +17,25 @@
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
         
-        #map { height: calc(100vh - 200px); width: 100%; z-index: 1; border-radius: 1.5rem; }
+        #map { height: calc(100vh - 180px); width: 100%; z-index: 1; border-radius: 1.5rem; }
 
-        /* Estilo Glassmorphism para el buscador y paneles */
+        /* Estilo Glassmorphism para paneles flotantes */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(226, 232, 240, 0.8);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         }
-
-        .custom-marker {
-            background-color: #1e3a8a;
-            border: 2px solid white;
-            border-radius: 50%;
-            color: white;
-            text-align: center;
-            line-height: 20px;
-            font-weight: bold;
+        
+        /* Efecto de pulso para el marcador base (opcional, para resaltarlo si se usa un divIcon, pero usaremos imagen) */
+        .pulse-base {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(30, 58, 138, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0); }
         }
     </style>
 </head>
@@ -43,28 +43,49 @@
 
     <header class="w-full bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center shadow-sm relative z-50">
         <div class="flex items-center space-x-4">
-            <a href="index.html" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-blue-900">
+            <a href="index.html" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-blue-900" title="Volver al Inicio">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </a>
-            <h1 class="text-xl font-black text-blue-900 uppercase tracking-tighter">Geolocalización de Clientes</h1>
+            <h1 class="text-xl font-black text-blue-900 uppercase tracking-tighter">Logística de Clientes</h1>
         </div>
-        <div class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest">Dangiola S.A. | Business Intelligence</div>
+        <div class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest">Base: Parque Industrial Burzaco</div>
     </header>
 
-    <main class="flex-grow p-4 md:p-6 relative">
+    <main class="flex-grow p-4 md:p-6 relative overflow-hidden">
         
         <div class="absolute top-10 left-1/2 transform -translate-x-1/2 w-full max-w-lg px-4 z-[1000]">
             <div class="glass-panel p-2 rounded-2xl flex items-center space-x-2">
                 <div class="pl-3 text-blue-900">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-                <input type="text" id="searchInput" placeholder="Buscar por Nombre o Código de Cliente..." 
-                       class="w-full bg-transparent border-none focus:ring-0 text-blue-900 font-medium placeholder-slate-400 py-3">
-                <div id="loadingStatus" class="hidden pr-3">
-                    <div class="animate-spin h-5 w-5 border-2 border-blue-900 border-t-transparent rounded-full"></div>
-                </div>
+                <input type="text" id="searchInput" placeholder="Buscar cliente por nombre o código..." 
+                       class="w-full bg-transparent border-none focus:ring-0 text-blue-900 font-medium placeholder-slate-400 py-3 outline-none">
             </div>
             <div id="resultsList" class="glass-panel mt-2 rounded-xl hidden max-h-60 overflow-y-auto border-none"></div>
+        </div>
+
+        <div id="infoPanel" class="absolute bottom-10 right-10 w-72 md:w-80 glass-panel p-6 rounded-3xl z-[1000] hidden transition-all duration-300 transform translate-y-4 opacity-0">
+            <div class="flex justify-between items-start mb-1">
+                <h3 class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Cálculo de Ruta</h3>
+                <button onclick="cerrarPanel()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p id="panelNombre" class="text-lg font-black text-blue-900 leading-tight mb-3">-</p>
+            
+            <div class="bg-white/50 rounded-xl p-3 mb-4 border border-slate-100">
+                <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Distancia Lineal Estimada</p>
+                <div class="flex items-baseline space-x-2">
+                    <span id="panelDistancia" class="text-3xl font-black text-slate-800">0</span>
+                    <span class="text-sm font-bold text-slate-400 uppercase">km</span>
+                </div>
+            </div>
+
+            <a id="btnGoogleMaps" target="_blank" 
+               class="w-full bg-blue-900 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+                <span>Navegar en Maps</span>
+            </a>
         </div>
 
         <div id="map" class="shadow-inner border border-slate-100"></div>
@@ -72,26 +93,57 @@
     </main>
 
     <script>
+        // Coordenadas exactas de Juan XXIII 2980, Parque Industrial Almirante Brown, Burzaco
+        const BASE_COORDS = [-34.8317, -58.3905]; 
+        
         let map;
         let markers = [];
         let allClients = [];
+        let baseMarker;
 
-        // Inicializar Mapa
         function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([-34.6037, -58.3816], 5);
+            // Inicializar mapa centrado en la planta
+            map = L.map('map', { zoomControl: false }).setView(BASE_COORDS, 10);
             
-            // Estilo de mapa limpio (CartoDB Voyager)
+            // Capa base limpia
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap'
+                attribution: '© OpenStreetMap'
             }).addTo(map);
 
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
+            // Controles de zoom abajo a la izquierda para no tapar el panel de info
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+            // ---------------------------------------------------------
+            // CREACIÓN DEL MARCADOR PERSONALIZADO CON cd.png
+            // ---------------------------------------------------------
+            const iconoBase = L.icon({
+                iconUrl: 'cd.png', // Tu archivo de imagen
+                iconSize: [40, 40], // Tamaño de la imagen [ancho, alto]
+                iconAnchor: [20, 20], // Punto de la imagen que corresponde a la coordenada exacta (centro)
+                popupAnchor: [0, -20] // Donde se abre el popup respecto al anchor
+            });
+
+            // Añadir el marcador de la planta al mapa
+            baseMarker = L.marker(BASE_COORDS, { 
+                icon: iconoBase,
+                zIndexOffset: 1000 // Asegura que el logo quede por encima de los clientes
+            }).addTo(map)
+              .bindPopup("<div class='text-center'><b class='text-blue-900'>PLANTA DANGIOLA S.A.</b><br><span class='text-xs text-slate-500'>Juan XXIII 2980, Burzaco</span></div>");
         }
 
-        // Cargar Datos del CSV
+        // Fórmula de Haversine para calcular distancia en línea recta (KM)
+        function calcularDistancia(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radio de la Tierra en km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return (R * c).toFixed(1);
+        }
+
+        // Cargar y procesar el CSV
         function loadData() {
-            document.getElementById('loadingStatus').classList.remove('hidden');
-            
             Papa.parse("clientes.csv", {
                 download: true,
                 header: true,
@@ -100,91 +152,121 @@
                 complete: function(results) {
                     allClients = results.data.filter(c => c.Latitud && c.Longitud);
                     renderMarkers(allClients);
-                    document.getElementById('loadingStatus').classList.add('hidden');
                 }
             });
         }
 
-        // Dibujar Marcadores
+        // Dibujar los pines de los clientes
         function renderMarkers(data) {
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
-
             data.forEach(client => {
                 const lat = parseFloat(client.Latitud);
                 const lng = parseFloat(client.Longitud);
-
+                
+                // Marcador simple para los clientes (punto azul)
                 const marker = L.circleMarker([lat, lng], {
-                    radius: 8,
-                    fillColor: "#1e3a8a",
-                    color: "#fff",
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.8
+                    radius: 6, 
+                    fillColor: "#3b82f6", // Azul más claro para diferenciar del azul marino
+                    color: "#ffffff", 
+                    weight: 2, 
+                    fillOpacity: 0.9
                 }).addTo(map);
 
-                const popupContent = `
-                    <div class="p-2 font-sans">
-                        <p class="text-[10px] font-bold text-blue-600 uppercase">Cód: ${client.Cliente}</p>
-                        <h3 class="text-sm font-black text-blue-900 leading-tight mb-1">${client.Nombre}</h3>
-                        <p class="text-xs text-slate-500">${client['Dirección Fiscal']}</p>
-                        <p class="text-xs text-slate-400 italic">${client.Localidad}</p>
-                    </div>
-                `;
-
-                marker.bindPopup(popupContent);
+                // Al hacer clic en un cliente, se muestra el panel logístico
+                marker.on('click', () => {
+                    const dist = calcularDistancia(BASE_COORDS[0], BASE_COORDS[1], lat, lng);
+                    mostrarInfoLogistica(client, dist);
+                });
+                
                 markers.push(marker);
             });
-
-            if (data.length > 0 && data.length < 50) {
-                const group = new L.featureGroup(markers);
-                map.fitBounds(group.getBounds().pad(0.5));
-            }
         }
 
-        // Lógica de Búsqueda
+        // Función para poblar y mostrar el panel logístico lateral
+        function mostrarInfoLogistica(client, distancia) {
+            const panel = document.getElementById('infoPanel');
+            
+            document.getElementById('panelNombre').innerText = client.Nombre || "Sin Nombre";
+            document.getElementById('panelDistancia').innerText = distancia;
+            
+            // Construir URL oficial de Google Maps para Rutas (API format)
+            // origin = Planta Burzaco | destination = Cliente
+            const latDestino = client.Latitud;
+            const lngDestino = client.Longitud;
+            const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${BASE_COORDS[0]},${BASE_COORDS[1]}&destination=${latDestino},${lngDestino}&travelmode=driving`;
+            
+            document.getElementById('btnGoogleMaps').href = mapsUrl;
+            
+            // Animación de aparición del panel
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                panel.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+            
+            // Hacer un ligero zoom hacia el cliente, pero dejando espacio para ver la planta si está cerca
+            map.flyTo([client.Latitud, client.Longitud], 13, { duration: 1.5 });
+        }
+
+        function cerrarPanel() {
+            const panel = document.getElementById('infoPanel');
+            panel.classList.add('translate-y-4', 'opacity-0');
+            setTimeout(() => {
+                panel.classList.add('hidden');
+            }, 300);
+        }
+
+        // Lógica del Buscador en tiempo real
         const searchInput = document.getElementById('searchInput');
         const resultsList = document.getElementById('resultsList');
 
         searchInput.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            if (val.length < 2) {
-                resultsList.classList.add('hidden');
-                return;
+            if (val.length < 2) { 
+                resultsList.classList.add('hidden'); 
+                return; 
             }
 
+            // Filtrar por nombre o número de cliente
             const filtered = allClients.filter(c => 
                 (c.Nombre && c.Nombre.toLowerCase().includes(val)) || 
                 (c.Cliente && c.Cliente.toString().includes(val))
-            ).slice(0, 8);
+            ).slice(0, 5); // Mostrar maximo 5 resultados rápidos
 
             if (filtered.length > 0) {
-                resultsList.innerHTML = filtered.map(c => `
-                    <div class="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-none transition-colors" 
-                         onclick="focusClient(${c.Latitud}, ${c.Longitud}, '${c.Nombre}')">
-                        <p class="text-[10px] font-bold text-blue-600 uppercase">Cód: ${c.Cliente}</p>
-                        <p class="text-sm font-bold text-blue-900">${c.Nombre}</p>
+                resultsList.innerHTML = filtered.map(c => {
+                    // Pre-calcular distancia para la búsqueda rápida
+                    const d = calcularDistancia(BASE_COORDS[0], BASE_COORDS[1], c.Latitud, c.Longitud);
+                    // Pasamos los datos serializados para evitar problemas de comillas
+                    const clientData = encodeURIComponent(JSON.stringify(c));
+                    
+                    return `
+                    <div class="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-none transition-colors flex justify-between items-center" 
+                         onclick="seleccionarDesdeBusqueda('${clientData}', ${d})">
+                        <div>
+                            <p class="text-sm font-bold text-blue-900 truncate max-w-[200px]">${c.Nombre}</p>
+                            <p class="text-[10px] text-slate-400 uppercase">Cód: ${c.Cliente}</p>
+                        </div>
+                        <span class="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">${d} km</span>
                     </div>
-                `).join('');
+                `}).join('');
                 resultsList.classList.remove('hidden');
             } else {
                 resultsList.classList.add('hidden');
             }
         });
 
-        function focusClient(lat, lng, nombre) {
-            map.flyTo([lat, lng], 15);
-            resultsList.classList.add('hidden');
-            searchInput.value = nombre;
+        // Al hacer clic en un resultado de búsqueda
+        window.seleccionarDesdeBusqueda = function(clientDataEncoded, distancia) {
+            const client = JSON.parse(decodeURIComponent(clientDataEncoded));
             
-            // Buscar y abrir el popup del marcador correspondiente
-            markers.forEach(m => {
-                if (m.getLatLng().lat === lat && m.getLatLng().lng === lng) {
-                    m.openPopup();
-                }
-            });
-        }
+            // Ocultar lista y limpiar input
+            resultsList.classList.add('hidden');
+            searchInput.value = '';
+            
+            // Mostrar panel y volar hacia el punto
+            mostrarInfoLogistica(client, distancia);
+        };
 
+        // Iniciar la app al cargar la ventana
         window.onload = () => {
             initMap();
             loadData();
