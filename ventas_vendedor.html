@@ -316,36 +316,146 @@
             if (bounds.length > 0) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
         }
 
+ // ==========================================
+        // LÓGICA DEL MOTOR IA GERENCIAL
+        // ==========================================
         function generarReporteGerencial() {
             const vendedorSel = document.getElementById('filtroVendedor').value;
             const container = document.getElementById('contenidoIA');
+            
             if(vendedorSel === 'Todos') {
-                container.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded"><p class="text-red-700 font-bold">Atención</p><p class="text-sm text-red-600">Seleccione un vendedor específico.</p></div>`;
-                abrirModalIA(); return;
+                container.innerHTML = `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                        <p class="text-red-700 font-bold">Atención</p>
+                        <p class="text-sm text-red-600">Para realizar el análisis gerencial profundo, debes seleccionar un vendedor específico en el filtro superior (no "Todos").</p>
+                    </div>`;
+                abrirModalIA();
+                return;
             }
+
             if(datosActualesFiltrados.length === 0) {
-                container.innerHTML = `<p class="text-slate-500">Sin datos de ventas.</p>`;
-                abrirModalIA(); return;
+                container.innerHTML = `<p class="text-slate-500">No hay datos de ventas registrados para ${vendedorSel} en este período.</p>`;
+                abrirModalIA();
+                return;
             }
-            let totalM2 = 0; let ventasPorMes = {}; let ventasPorEstructura = {};
+
+            // Procesamiento Analítico
+            let totalM2 = 0;
+            let ventasPorMes = {};
+            let ventasPorEstructura = {};
+
             datosActualesFiltrados.forEach(d => {
-                let m2 = parseFloat(d.m2) || 0; totalM2 += m2;
+                let m2 = parseFloat(d.m2) || 0;
+                totalM2 += m2;
+                
                 let mes = d.EVENTO.substring(0, 7);
                 let modelo = d.Modelo ? d.Modelo.trim() : 'Desc. / Varios';
+                
                 ventasPorMes[mes] = (ventasPorMes[mes] || 0) + m2;
                 ventasPorEstructura[modelo] = (ventasPorEstructura[modelo] || 0) + m2;
             });
-            let promedioM2 = totalM2 / datosActualesFiltrados.length;
-            let mesesOrdenados = Object.entries(ventasPorMes).sort((a, b) => b[1] - a[1]);
-            let estOrdenadas = Object.entries(ventasPorEstructura).sort((a, b) => b[1] - a[1]);
-            let perfil = promedioM2 > 500 ? "Grandes Superficies" : (promedioM2 > 200 ? "Equilibrado" : "Volumen");
 
-            container.innerHTML = `<div class="space-y-6"><div><h3 class="text-sm text-slate-400 font-bold mb-2 uppercase">Perfil: <span class="text-blue-900">${vendedorSel}</span></h3><div class="p-4 rounded-xl border border-blue-200 bg-blue-50"><p class="font-black text-blue-900">${perfil}</p><p class="text-xs text-blue-700">Promedio: ${promedioM2.toFixed(0)} m² por cierre.</p></div></div><div class="grid grid-cols-2 gap-4"><div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100"><h4 class="font-bold text-xs uppercase text-emerald-700">Pico</h4><p class="text-xs text-emerald-800">${mesesOrdenados[0][0]}: ${mesesOrdenados[0][1].toLocaleString()} m²</p></div><div class="bg-red-50 p-4 rounded-xl border border-red-100"><h4 class="font-bold text-xs uppercase text-red-700">Valle</h4><p class="text-xs text-red-800">${mesesOrdenados[mesesOrdenados.length-1][0]}: ${mesesOrdenados[mesesOrdenados.length-1][1].toLocaleString()} m²</p></div></div></div>`;
+            let eventosTotales = datosActualesFiltrados.length;
+            let promedioM2 = totalM2 / eventosTotales;
+
+            // Análisis de Meses
+            let mesesOrdenados = Object.entries(ventasPorMes).sort((a, b) => b[1] - a[1]);
+            let mesFuerte = mesesOrdenados[0];
+            let mesDebil = mesesOrdenados[mesesOrdenados.length - 1];
+
+            // Análisis de Estructuras (Top y Bottom)
+            let estructurasOrdenadas = Object.entries(ventasPorEstructura).sort((a, b) => b[1] - a[1]);
+            let estFuertes = estructurasOrdenadas.slice(0, 2); // Top 2
+            let estDebiles = estructurasOrdenadas.slice(-2).reverse(); // Bottom 2
+
+            // Clasificación de Vendedor (IA Algorítmica)
+            let perfilVendedor = "";
+            let colorPerfil = "";
+            if(promedioM2 > 500) {
+                perfilVendedor = "Vendedor Corporativo / Grandes Superficies";
+                colorPerfil = "text-purple-700 bg-purple-100 border-purple-300";
+            } else if (promedioM2 > 200) {
+                perfilVendedor = "Vendedor Equilibrado / Proyectos Medios";
+                colorPerfil = "text-blue-700 bg-blue-100 border-blue-300";
+            } else {
+                perfilVendedor = "Vendedor de Volumen / Pequeñas Estructuras";
+                colorPerfil = "text-emerald-700 bg-emerald-100 border-emerald-300";
+            }
+
+            function formatMes(yyyy_mm) {
+                return new Date(yyyy_mm + '-02').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            }
+
+            // Generación del Reporte HTML
+            let reporteHTML = `
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-sm uppercase tracking-widest text-slate-400 font-bold mb-2">Perfil Analítico de: <span class="text-blue-900">${vendedorSel}</span></h3>
+                        <div class="p-4 rounded-xl border ${colorPerfil} inline-block">
+                            <p class="font-black">${perfilVendedor}</p>
+                            <p class="text-xs mt-1 opacity-80">Basado en un promedio histórico de ${promedioM2.toFixed(0)} m² por evento cerrado.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                            <div class="flex items-center space-x-2 mb-2 text-emerald-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                                <h4 class="font-bold uppercase text-xs">Picos de Actividad</h4>
+                            </div>
+                            <p class="text-sm text-slate-700">El mes de mayor facturación de estructuras fue <b class="capitalize">${formatMes(mesFuerte[0])}</b>, logrando consolidar <b>${mesFuerte[1].toLocaleString('es-AR')} m²</b>.</p>
+                        </div>
+
+                        <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                            <div class="flex items-center space-x-2 mb-2 text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>
+                                <h4 class="font-bold uppercase text-xs">Valles de Actividad</h4>
+                            </div>
+                            <p class="text-sm text-slate-700">El registro más bajo del período analizado fue en <b class="capitalize">${formatMes(mesDebil[0])}</b>, con apenas <b>${mesDebil[1].toLocaleString('es-AR')} m²</b>.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border border-slate-200 p-4 rounded-xl bg-white shadow-sm">
+                            <h4 class="font-bold text-slate-800 text-sm mb-3 border-b pb-2">Estructuras Fuertes (Más Vendidas)</h4>
+                            <ul class="space-y-2">
+                                ${estFuertes.map(e => `
+                                    <li class="flex justify-between items-center text-sm">
+                                        <span class="font-medium text-slate-600">${e[0]}</span>
+                                        <span class="font-black text-blue-600">${e[1].toLocaleString('es-AR')} m²</span>
+                                    </li>`).join('')}
+                            </ul>
+                            <p class="text-[10px] text-slate-400 mt-3 italic">Gran facilidad para posicionar estos modelos.</p>
+                        </div>
+
+                        <div class="border border-slate-200 p-4 rounded-xl bg-white shadow-sm">
+                            <h4 class="font-bold text-slate-800 text-sm mb-3 border-b pb-2">Oportunidades (Menos Vendidas)</h4>
+                            <ul class="space-y-2">
+                                ${estDebiles.map(e => `
+                                    <li class="flex justify-between items-center text-sm">
+                                        <span class="font-medium text-slate-600">${e[0]}</span>
+                                        <span class="font-black text-red-500">${e[1].toLocaleString('es-AR')} m²</span>
+                                    </li>`).join('')}
+                            </ul>
+                            <p class="text-[10px] text-slate-400 mt-3 italic">Posible necesidad de apoyo técnico o estrategia comercial para impulsar estos modelos.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = reporteHTML;
             abrirModalIA();
         }
 
-        function abrirModalIA() { document.getElementById('modalIA').classList.remove('hidden'); }
-        function cerrarModalIA() { document.getElementById('modalIA').classList.add('hidden'); }
+        function abrirModalIA() {
+            const modal = document.getElementById('modalIA');
+            modal.classList.remove('hidden');
+        }
+
+        function cerrarModalIA() {
+            const modal = document.getElementById('modalIA');
+            modal.classList.add('hidden');
+        }
     </script>
 </body>
 </html>
