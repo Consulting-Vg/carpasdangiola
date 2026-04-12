@@ -27,16 +27,6 @@
             border: 1px solid rgba(226, 232, 240, 0.8);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         }
-        
-        /* Efecto de pulso para el marcador base (opcional, para resaltarlo si se usa un divIcon, pero usaremos imagen) */
-        .pulse-base {
-            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(30, 58, 138, 0); }
-            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0); }
-        }
     </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col">
@@ -48,7 +38,7 @@
             </a>
             <h1 class="text-xl font-black text-blue-900 uppercase tracking-tighter">Logística de Clientes</h1>
         </div>
-        <div class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest">Base: Parque Industrial Burzaco</div>
+        <div class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest">Base: Carpas Dangiola</div>
     </header>
 
     <main class="flex-grow p-4 md:p-6 relative overflow-hidden">
@@ -93,8 +83,8 @@
     </main>
 
     <script>
-        // Coordenadas exactas de Juan XXIII 2980, Parque Industrial Almirante Brown, Burzaco
-        const BASE_COORDS = [-34.8317, -58.3905]; 
+        // NUEVAS Coordenadas exactas de Carpas Dangiola
+        const BASE_COORDS = [-34.83469460403592, -58.42450930304673]; 
         
         let map;
         let markers = [];
@@ -103,37 +93,32 @@
 
         function initMap() {
             // Inicializar mapa centrado en la planta
-            map = L.map('map', { zoomControl: false }).setView(BASE_COORDS, 10);
+            map = L.map('map', { zoomControl: false }).setView(BASE_COORDS, 11);
             
-            // Capa base limpia
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap'
             }).addTo(map);
 
-            // Controles de zoom abajo a la izquierda para no tapar el panel de info
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-            // ---------------------------------------------------------
-            // CREACIÓN DEL MARCADOR PERSONALIZADO CON cd.png
-            // ---------------------------------------------------------
+            // Marcador de la planta con cd.png
             const iconoBase = L.icon({
-                iconUrl: 'cd.png', // Tu archivo de imagen
-                iconSize: [40, 40], // Tamaño de la imagen [ancho, alto]
-                iconAnchor: [20, 20], // Punto de la imagen que corresponde a la coordenada exacta (centro)
-                popupAnchor: [0, -20] // Donde se abre el popup respecto al anchor
+                iconUrl: 'cd.png', 
+                iconSize: [40, 40], 
+                iconAnchor: [20, 20], 
+                popupAnchor: [0, -20] 
             });
 
-            // Añadir el marcador de la planta al mapa
             baseMarker = L.marker(BASE_COORDS, { 
                 icon: iconoBase,
-                zIndexOffset: 1000 // Asegura que el logo quede por encima de los clientes
+                zIndexOffset: 1000 
             }).addTo(map)
-              .bindPopup("<div class='text-center'><b class='text-blue-900'>PLANTA DANGIOLA S.A.</b><br><span class='text-xs text-slate-500'>Juan XXIII 2980, Burzaco</span></div>");
+              .bindPopup("<div class='text-center'><b class='text-blue-900'>CARPAS DANGIOLA</b><br><span class='text-xs text-slate-500'>Base Logística</span></div>");
         }
 
         // Fórmula de Haversine para calcular distancia en línea recta (KM)
         function calcularDistancia(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radio de la Tierra en km
+            const R = 6371; 
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -142,7 +127,6 @@
             return (R * c).toFixed(1);
         }
 
-        // Cargar y procesar el CSV
         function loadData() {
             Papa.parse("clientes.csv", {
                 download: true,
@@ -156,22 +140,19 @@
             });
         }
 
-        // Dibujar los pines de los clientes
         function renderMarkers(data) {
             data.forEach(client => {
                 const lat = parseFloat(client.Latitud);
                 const lng = parseFloat(client.Longitud);
                 
-                // Marcador simple para los clientes (punto azul)
                 const marker = L.circleMarker([lat, lng], {
                     radius: 6, 
-                    fillColor: "#3b82f6", // Azul más claro para diferenciar del azul marino
+                    fillColor: "#3b82f6", 
                     color: "#ffffff", 
                     weight: 2, 
                     fillOpacity: 0.9
                 }).addTo(map);
 
-                // Al hacer clic en un cliente, se muestra el panel logístico
                 marker.on('click', () => {
                     const dist = calcularDistancia(BASE_COORDS[0], BASE_COORDS[1], lat, lng);
                     mostrarInfoLogistica(client, dist);
@@ -181,28 +162,23 @@
             });
         }
 
-        // Función para poblar y mostrar el panel logístico lateral
         function mostrarInfoLogistica(client, distancia) {
             const panel = document.getElementById('infoPanel');
             
             document.getElementById('panelNombre').innerText = client.Nombre || "Sin Nombre";
             document.getElementById('panelDistancia').innerText = distancia;
             
-            // Construir URL oficial de Google Maps para Rutas (API format)
-            // origin = Planta Burzaco | destination = Cliente
             const latDestino = client.Latitud;
             const lngDestino = client.Longitud;
-            const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${BASE_COORDS[0]},${BASE_COORDS[1]}&destination=${latDestino},${lngDestino}&travelmode=driving`;
+            const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=$${BASE_COORDS[0]},${BASE_COORDS[1]}&destination=${latDestino},${lngDestino}&travelmode=driving`;
             
             document.getElementById('btnGoogleMaps').href = mapsUrl;
             
-            // Animación de aparición del panel
             panel.classList.remove('hidden');
             setTimeout(() => {
                 panel.classList.remove('translate-y-4', 'opacity-0');
             }, 10);
             
-            // Hacer un ligero zoom hacia el cliente, pero dejando espacio para ver la planta si está cerca
             map.flyTo([client.Latitud, client.Longitud], 13, { duration: 1.5 });
         }
 
@@ -214,7 +190,6 @@
             }, 300);
         }
 
-        // Lógica del Buscador en tiempo real
         const searchInput = document.getElementById('searchInput');
         const resultsList = document.getElementById('resultsList');
 
@@ -225,17 +200,14 @@
                 return; 
             }
 
-            // Filtrar por nombre o número de cliente
             const filtered = allClients.filter(c => 
                 (c.Nombre && c.Nombre.toLowerCase().includes(val)) || 
                 (c.Cliente && c.Cliente.toString().includes(val))
-            ).slice(0, 5); // Mostrar maximo 5 resultados rápidos
+            ).slice(0, 5); 
 
             if (filtered.length > 0) {
                 resultsList.innerHTML = filtered.map(c => {
-                    // Pre-calcular distancia para la búsqueda rápida
                     const d = calcularDistancia(BASE_COORDS[0], BASE_COORDS[1], c.Latitud, c.Longitud);
-                    // Pasamos los datos serializados para evitar problemas de comillas
                     const clientData = encodeURIComponent(JSON.stringify(c));
                     
                     return `
@@ -254,19 +226,13 @@
             }
         });
 
-        // Al hacer clic en un resultado de búsqueda
         window.seleccionarDesdeBusqueda = function(clientDataEncoded, distancia) {
             const client = JSON.parse(decodeURIComponent(clientDataEncoded));
-            
-            // Ocultar lista y limpiar input
             resultsList.classList.add('hidden');
             searchInput.value = '';
-            
-            // Mostrar panel y volar hacia el punto
             mostrarInfoLogistica(client, distancia);
         };
 
-        // Iniciar la app al cargar la ventana
         window.onload = () => {
             initMap();
             loadData();
