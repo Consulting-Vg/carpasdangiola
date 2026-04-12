@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Clientes - Dangiola</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
+        
+        #map { height: calc(100vh - 200px); width: 100%; z-index: 1; border-radius: 1.5rem; }
+
+        /* Estilo Glassmorphism para el buscador y paneles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-marker {
+            background-color: #1e3a8a;
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <header class="w-full bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center shadow-sm relative z-50">
+        <div class="flex items-center space-x-4">
+            <a href="index.html" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-blue-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </a>
+            <h1 class="text-xl font-black text-blue-900 uppercase tracking-tighter">Geolocalización de Clientes</h1>
+        </div>
+        <div class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest">Dangiola S.A. | Business Intelligence</div>
+    </header>
+
+    <main class="flex-grow p-4 md:p-6 relative">
+        
+        <div class="absolute top-10 left-1/2 transform -translate-x-1/2 w-full max-w-lg px-4 z-[1000]">
+            <div class="glass-panel p-2 rounded-2xl flex items-center space-x-2">
+                <div class="pl-3 text-blue-900">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <input type="text" id="searchInput" placeholder="Buscar por Nombre o Código de Cliente..." 
+                       class="w-full bg-transparent border-none focus:ring-0 text-blue-900 font-medium placeholder-slate-400 py-3">
+                <div id="loadingStatus" class="hidden pr-3">
+                    <div class="animate-spin h-5 w-5 border-2 border-blue-900 border-t-transparent rounded-full"></div>
+                </div>
+            </div>
+            <div id="resultsList" class="glass-panel mt-2 rounded-xl hidden max-h-60 overflow-y-auto border-none"></div>
+        </div>
+
+        <div id="map" class="shadow-inner border border-slate-100"></div>
+
+    </main>
+
+    <script>
+        let map;
+        let markers = [];
+        let allClients = [];
+
+        // Inicializar Mapa
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([-34.6037, -58.3816], 5);
+            
+            // Estilo de mapa limpio (CartoDB Voyager)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
+
+        // Cargar Datos del CSV
+        function loadData() {
+            document.getElementById('loadingStatus').classList.remove('hidden');
+            
+            Papa.parse("clientes.csv", {
+                download: true,
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    allClients = results.data.filter(c => c.Latitud && c.Longitud);
+                    renderMarkers(allClients);
+                    document.getElementById('loadingStatus').classList.add('hidden');
+                }
+            });
+        }
+
+        // Dibujar Marcadores
+        function renderMarkers(data) {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            data.forEach(client => {
+                const lat = parseFloat(client.Latitud);
+                const lng = parseFloat(client.Longitud);
+
+                const marker = L.circleMarker([lat, lng], {
+                    radius: 8,
+                    fillColor: "#1e3a8a",
+                    color: "#fff",
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                const popupContent = `
+                    <div class="p-2 font-sans">
+                        <p class="text-[10px] font-bold text-blue-600 uppercase">Cód: ${client.Cliente}</p>
+                        <h3 class="text-sm font-black text-blue-900 leading-tight mb-1">${client.Nombre}</h3>
+                        <p class="text-xs text-slate-500">${client['Dirección Fiscal']}</p>
+                        <p class="text-xs text-slate-400 italic">${client.Localidad}</p>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent);
+                markers.push(marker);
+            });
+
+            if (data.length > 0 && data.length < 50) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.5));
+            }
+        }
+
+        // Lógica de Búsqueda
+        const searchInput = document.getElementById('searchInput');
+        const resultsList = document.getElementById('resultsList');
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            if (val.length < 2) {
+                resultsList.classList.add('hidden');
+                return;
+            }
+
+            const filtered = allClients.filter(c => 
+                (c.Nombre && c.Nombre.toLowerCase().includes(val)) || 
+                (c.Cliente && c.Cliente.toString().includes(val))
+            ).slice(0, 8);
+
+            if (filtered.length > 0) {
+                resultsList.innerHTML = filtered.map(c => `
+                    <div class="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-none transition-colors" 
+                         onclick="focusClient(${c.Latitud}, ${c.Longitud}, '${c.Nombre}')">
+                        <p class="text-[10px] font-bold text-blue-600 uppercase">Cód: ${c.Cliente}</p>
+                        <p class="text-sm font-bold text-blue-900">${c.Nombre}</p>
+                    </div>
+                `).join('');
+                resultsList.classList.remove('hidden');
+            } else {
+                resultsList.classList.add('hidden');
+            }
+        });
+
+        function focusClient(lat, lng, nombre) {
+            map.flyTo([lat, lng], 15);
+            resultsList.classList.add('hidden');
+            searchInput.value = nombre;
+            
+            // Buscar y abrir el popup del marcador correspondiente
+            markers.forEach(m => {
+                if (m.getLatLng().lat === lat && m.getLatLng().lng === lng) {
+                    m.openPopup();
+                }
+            });
+        }
+
+        window.onload = () => {
+            initMap();
+            loadData();
+        };
+    </script>
+</body>
+</html>
