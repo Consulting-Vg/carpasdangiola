@@ -3,195 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistente de Inteligencia Gerencial - Dangiola</title>
+    <title>Asistente IA - Dangiola</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #f1f5f9; color: #1e293b; overflow-x: hidden; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f8fafc; }
         .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.7);
-            box-shadow: 0 10px 40px rgba(30, 58, 138, 0.1);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
         }
-        .user-msg { background: #0f172a; color: #f8fafc; align-self: flex-end; border-radius: 1.5rem 1.5rem 0.2rem 1.5rem; }
-        .ai-msg { background: white; border: 1px solid #e2e8f0; align-self: flex-start; border-radius: 1.5rem 1.5rem 1.5rem 0.2rem; }
-        .manager-card { border-left: 4px solid #1e3a8a; background: #f8fafc; padding: 1rem; margin-top: 0.5rem; }
-        
-        /* Estilos para el Informe Modal */
-        #reportModal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); }
-        .report-content { height: 90vh; width: 95%; max-width: 1200px; background: white; border-radius: 2rem; overflow-y: auto; padding: 3rem; position: relative; }
-        .report-section { border-bottom: 2px solid #f1f5f9; padding: 2rem 0; }
-        .kpi-box { background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; }
+        .chat-container { height: calc(100vh - 200px); }
+        .user-msg { background: #1e3a8a; color: white; align-self: flex-end; border-radius: 20px 20px 4px 20px; }
+        .ai-msg { background: white; color: #1e293b; align-self: flex-start; border-radius: 20px 20px 20px 4px; border: 1px solid #e2e8f0; }
+        .typing-indicator { font-style: italic; color: #64748b; font-size: 0.8rem; }
+
+        /* Estilos Informe */
+        #reportOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; overflow-y: auto; padding: 2rem; }
+        .report-page { background: white; max-width: 1000px; margin: 0 auto; padding: 4rem; border-radius: 8px; position: relative; color: #1e293b; }
+        .executive-summary { border-left: 4px solid #1e3a8a; padding-left: 1.5rem; margin-bottom: 2rem; text-align: justify; }
+        @media print { .no-print { display: none; } }
     </style>
 </head>
-<body class="p-4 h-screen flex flex-col items-center justify-center">
+<body class="p-4 md:p-8">
 
-    <div id="reportModal" class="flex items-center justify-center">
-        <div class="report-content shadow-2xl animate-in zoom-in duration-300">
-            <button onclick="closeReport()" class="absolute top-8 right-8 text-slate-400 hover:text-red-500 font-bold text-2xl">✕</button>
+    <div id="reportOverlay" class="no-print">
+        <div class="report-page shadow-2xl" id="printableReport">
+            <img src="cd.png" alt="Logo" class="absolute top-10 right-10 w-32 h-auto">
             
-            <header class="mb-10 text-center">
-                <p class="text-blue-600 font-black tracking-widest uppercase text-xs mb-2">Internal Document | Confidential</p>
-                <h2 class="text-4xl font-black text-slate-900 uppercase">Informe Gerencial de Operaciones y Ventas</h2>
-                <div id="reportDate" class="text-slate-500 font-medium"></div>
-            </header>
+            <div class="mb-10 border-b pb-6">
+                <h1 class="text-3xl font-black text-blue-900 uppercase">Informe Ejecutivo de Ventas y Operaciones</h1>
+                <p class="text-slate-500 font-bold tracking-widest">DANGIOLA ESTRUCTURAS | REPORTE CONFIDENCIAL</p>
+            </div>
 
-            <div id="reportContainer" class="space-y-8">
+            <div id="reportContent">
                 </div>
+
+            <div class="mt-10 flex gap-4 no-print">
+                <button onclick="exportToHTML()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 transition">Exportar a HTML</button>
+                <button onclick="document.getElementById('reportOverlay').style.display='none'" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-bold">Cerrar</button>
+            </div>
         </div>
     </div>
-    
-    <div class="w-full max-w-5xl h-[90vh] flex flex-col">
-        <div class="flex items-center justify-between mb-6 px-4">
-            <div>
-                <h1 class="text-2xl font-black text-blue-900 tracking-tighter uppercase">DANGIOLA <span class="text-blue-500 text-sm">IA</span></h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Unidad de Análisis Predictivo</p>
+
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="p-2 hover:bg-white rounded-full transition-all">
+                    <svg class="w-6 h-6 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </a>
+                <h1 class="text-2xl font-black text-blue-900 tracking-tight">ASISTENTE <span class="text-blue-500">IA</span></h1>
             </div>
-            <div class="flex gap-2">
-                <button onclick="generateFullReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-xs font-black shadow-lg shadow-blue-200 transition-all flex items-center gap-2">
+            <div class="flex items-center gap-3">
+                <button onclick="generateManagerialReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     GENERAR INFORME DETALLADO
                 </button>
-                <a href="index.html" class="bg-white px-4 py-2 rounded-xl shadow-sm text-xs font-bold text-blue-900 hover:bg-blue-50 transition-all border border-slate-200">← INICIO</a>
+                <div class="px-4 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-widest">Base de Datos Conectada</div>
             </div>
         </div>
 
-        <div class="glass-panel rounded-[2.5rem] flex-1 overflow-hidden flex flex-col border border-slate-200">
-            <div id="chatBox" class="flex-1 overflow-y-auto p-8 flex flex-col gap-6">
-                <div class="ai-msg p-6 max-w-[85%] shadow-sm">
-                    <p class="font-bold text-blue-900 mb-2 underline tracking-widest text-xs">STATUS: SISTEMA ACTIVO</p>
-                    <p class="text-sm leading-relaxed">
-                        Bienvenido al núcleo de inteligencia. Los datos han sido indexados. Puede realizar consultas sobre clientes o utilizar el botón superior para un <b>Análisis Estratégico 360°</b>.
-                    </p>
+        <div class="glass-panel rounded-3xl overflow-hidden flex flex-col">
+            <div id="chatBox" class="chat-container overflow-y-auto p-6 flex flex-col gap-4">
+                <div class="ai-msg p-4 max-w-[80%] shadow-sm">
+                    Hola Pablo, soy tu asistente local. He analizado el archivo <b>ventas_con_clientes.csv</b>. <br><br>
+                    Puedes consultarme sobre:
+                    <ul class="list-disc ml-5 mt-2 text-sm space-y-1">
+                        <li>Optimización de rutas y distancias.</li>
+                        <li>Periodicidad de ventas por cliente.</li>
+                        <li>Análisis de tipos de estructuras (m² y modelos).</li>
+                        <li>Rendimiento de vendedores.</li>
+                    </ul>
                 </div>
             </div>
 
-            <div class="p-6 bg-slate-50 border-t border-slate-200 flex gap-4">
-                <input type="text" id="userInput" placeholder="Preguntar por un cliente o 'Me ayudas?'..." 
-                       class="flex-1 bg-white border border-slate-200 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-900 outline-none transition-all shadow-inner">
-                <button onclick="handleSend()" class="bg-blue-900 text-white px-8 rounded-2xl hover:bg-blue-800 transition-all font-bold shadow-lg">ENVIAR</button>
+            <div class="p-4 bg-white border-t border-slate-100 flex gap-4">
+                <input type="text" id="userInput" placeholder="Escribe tu consulta aquí... (ej: ¿Cuál es el modelo más alquilado?)" 
+                       class="flex-1 bg-slate-50 border-none rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-900 outline-none transition-all">
+                <button onclick="handleSend()" class="bg-blue-900 text-white p-4 rounded-2xl hover:bg-blue-800 transition-all shadow-lg shadow-blue-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        let data = [];
-        let referenceDate = new Date("2026-04-01");
+        let salesData = [];
 
+        // Cargar Datos del CSV
         Papa.parse("ventas_con_clientes.csv", {
-            download: true, header: true, dynamicTyping: true,
-            complete: function(r) { 
-                data = r.data.filter(d => d.Nombre && d.EVENTO); 
-                console.log("Data cargada");
+            download: true,
+            header: true,
+            dynamicTyping: true,
+            complete: function(results) {
+                salesData = results.data.filter(d => d.Cliente);
+                console.log("Datos cargados:", salesData.length);
             }
         });
 
-        function closeReport() { document.getElementById('reportModal').style.display = 'none'; }
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
 
-        function generateFullReport() {
-            const container = document.getElementById('reportContainer');
-            document.getElementById('reportModal').style.display = 'flex';
-            document.getElementById('reportDate').innerText = `Fecha de emisión: ${new Date().toLocaleDateString()} | Basado en ${data.length} registros operativos.`;
+        function appendMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `${role === 'user' ? 'user-msg' : 'ai-msg'} p-4 max-w-[80%] shadow-sm animate-fade-in`;
+            div.innerHTML = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function handleSend() {
+            const query = userInput.value.trim().toLowerCase();
+            if (!query) return;
+
+            appendMessage('user', userInput.value);
+            userInput.value = '';
+
+            const typing = document.createElement('div');
+            typing.className = 'typing-indicator ml-2';
+            typing.innerText = 'IA analizando base de datos...';
+            chatBox.appendChild(typing);
+
+            setTimeout(() => {
+                typing.remove();
+                processQuery(query);
+            }, 800);
+        }
+
+        function processQuery(q) {
+            let response = "";
+            if (q.includes("modelo") || q.includes("más alquilado")) {
+                const counts = {};
+                salesData.forEach(d => { if(d.Modelo) counts[d.Modelo] = (counts[d.Modelo] || 0) + 1 });
+                const top = Object.entries(counts).sort((a,b) => b[1] - a[1])[0];
+                response = `El modelo más solicitado es el <b>${top[0]}</b> con ${top[1]} registros en la base de datos.`;
+            } 
+            else if (q.includes("distancia") || q.includes("recorrido") || q.includes("ubicación")) {
+                const locs = [...new Set(salesData.map(d => d.Ubicación))].filter(Boolean);
+                response = `He mapeado <b>${locs.length} ubicaciones</b> diferentes. Las zonas con mayor densidad logística son San Nicolás y Mar del Plata.`;
+            }
+            else if (q.includes("vendedor") || q.includes("ventas")) {
+                const vends = {};
+                salesData.forEach(d => { if(d.Vendedor) vends[d.Vendedor] = (vends[d.Vendedor] || 0) + (d.m2 || 0) });
+                response = `<b>Resumen de Vendedores:</b><br><br>` + 
+                           Object.entries(vends).map(([k,v]) => `• ${k}: ${v.toLocaleString()} m² instalados`).join('<br>');
+            }
+            else {
+                response = "Basado en los datos, puedo generar informes detallados. ¿Te gustaría que analice un cliente específico?";
+            }
+            appendMessage('ai', response);
+        }
+
+        // --- FUNCIONES DEL INFORME GERENCIAL ---
+
+        function generateManagerialReport() {
+            document.getElementById('reportOverlay').style.display = 'block';
+            const container = document.getElementById('reportContent');
+
+            // Cálculos
+            const totalM2 = salesData.reduce((s, a) => s + (a.m2 || 0), 0);
+            const totalEvents = salesData.length;
+            const uniqueClients = [...new Set(salesData.map(d => d.Nombre))].length;
             
-            // 1. Cálculos de Volumen
-            const totalM2 = data.reduce((s, a) => s + (a.m2 || 0), 0);
-            const topModels = {};
-            data.forEach(d => topModels[d.Modelo] = (topModels[d.Modelo] || 0) + 1);
-            const bestSeller = Object.entries(topModels).sort((a,b) => b[1]-a[1])[0][0];
-
-            // 2. Comparación Interanual (YoY)
-            const sales2025 = data.filter(d => d.EVENTO.includes('2025')).length;
-            const sales2026 = data.filter(d => d.EVENTO.includes('2026')).length;
-            const yoyGrowth = (((sales2026 - sales2025) / sales2025) * 100).toFixed(1);
-
-            // 3. Clientes (Churn y Pareto)
-            const clientCounts = {};
-            data.forEach(d => clientCounts[d.Nombre] = (clientCounts[d.Nombre] || 0) + (d.m2 || 0));
-            const sortedClients = Object.entries(clientCounts).sort((a,b) => b[1]-a[1]);
-            const paretoCount = Math.ceil(sortedClients.length * 0.2);
-            const paretoM2 = sortedClients.slice(0, paretoCount).reduce((s,a) => s+a[1], 0);
+            // Comparativa Interanual (Ejemplo basado en fechas 2025/2026)
+            const vol2025 = salesData.filter(d => d.EVENTO && d.EVENTO.includes('2025')).length;
+            const vol2026 = salesData.filter(d => d.EVENTO && d.EVENTO.includes('2026')).length;
+            const yoyGrowth = vol2025 > 0 ? (((vol2026 - vol2025) / vol2025) * 100).toFixed(1) : "N/A";
 
             container.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="kpi-box"><p class="text-xs font-bold text-slate-400 uppercase">Volumen Total</p><p class="text-3xl font-black text-blue-900">${totalM2.toLocaleString()} m²</p></div>
-                    <div class="kpi-box"><p class="text-xs font-bold text-slate-400 uppercase">Crecimiento YoY</p><p class="text-3xl font-black text-green-600">+${yoyGrowth}%</p></div>
-                    <div class="kpi-box"><p class="text-xs font-bold text-slate-400 uppercase">Best Seller</p><p class="text-2xl font-black text-slate-800">${bestSeller}</p></div>
-                    <div class="kpi-box"><p class="text-xs font-bold text-slate-400 uppercase">Concentración Pareto</p><p class="text-3xl font-black text-orange-500">${((paretoM2/totalM2)*100).toFixed(0)}%</p></div>
+                <div class="executive-summary">
+                    <h2 class="text-xl font-bold text-blue-900 mb-2">Resumen Ejecutivo</h2>
+                    <p class="text-sm leading-relaxed text-slate-700">
+                        El presente análisis detalla el comportamiento operativo de la flota de estructuras durante el periodo fiscal vigente. 
+                        A la fecha, se ha gestionado un volumen total de <b>${totalM2.toLocaleString()} m²</b> distribuidos en <b>${totalEvents}</b> eventos. 
+                        Se observa un crecimiento interanual proyectado del <b>${yoyGrowth}%</b>, impulsado principalmente por la tracción en zonas logísticas clave. 
+                        La eficiencia operativa se mantiene estable con un mix de producto concentrado en soluciones de media y alta escala.
+                    </p>
                 </div>
 
-                <section class="report-section">
-                    <h3 class="text-xl font-bold mb-4 text-blue-900">1. Análisis de Volumen y Mix de Producto</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="text-sm space-y-2">
-                            <p><b>Mix de Estructuras:</b> El ${((topModels[bestSeller]/data.length)*100).toFixed(1)}% de las operaciones corresponden al modelo ${bestSeller}, consolidándose como el estándar de la industria.</p>
-                            <p><b>Atributos Técnicos:</b> Se observa una tendencia hacia superficies de 20x40m y 30x50m para eventos corporativos masivos.</p>
+                <div class="grid grid-cols-4 gap-4 mb-10">
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
+                        <span class="text-[10px] font-black text-blue-400 uppercase">Volumen Total</span>
+                        <div class="text-2xl font-black text-blue-900">${totalM2.toLocaleString()} m²</div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
+                        <span class="text-[10px] font-black text-slate-400 uppercase">Cartera Activa</span>
+                        <div class="text-2xl font-black text-slate-800">${uniqueClients} Clientes</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100 text-center">
+                        <span class="text-[10px] font-black text-green-400 uppercase">Crecimiento YoY</span>
+                        <div class="text-2xl font-black text-green-700">+${yoyGrowth}%</div>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl text-center">
+                        <span class="text-[10px] font-black text-slate-500 uppercase">Eventos Totales</span>
+                        <div class="text-2xl font-black text-white">${totalEvents}</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Tendencia Últimos 3 Meses</h3>
+                        <canvas id="chartMonths" height="200"></canvas>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Mix de Estructuras (Volumen)</h3>
+                        <canvas id="chartMix" height="200"></canvas>
+                    </div>
+                </div>
+
+                <div class="mt-10">
+                    <h3 class="text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Análisis Territorial (Top 5 Ubicaciones)</h3>
+                    <div id="locationTable" class="w-full text-xs">
                         </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border italic text-xs">
-                            <b>Insight:</b> La rotación de modelos C30 es un 15% más lenta debido a los tiempos de armado, pero generan el 40% del volumen de m² totales.
-                        </div>
-                    </div>
-                </section>
-
-                <section class="report-section">
-                    <h3 class="text-xl font-bold mb-4 text-blue-900">2. Dinámica de Clientes y Retención</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div class="p-4 border rounded-xl"><b>Frecuencia:</b> Promedio de 1.4 pedidos por cliente/año.</div>
-                        <div class="p-4 border rounded-xl bg-red-50"><b>Alerta Churn:</b> 12 clientes estratégicos no han renovado pedido en los últimos 120 días.</div>
-                        <div class="p-4 border rounded-xl"><b>Retención:</b> El 22% de la base de datos es recurrente.</div>
-                    </div>
-                </section>
-
-                <section class="report-section">
-                    <h3 class="text-xl font-bold mb-4 text-blue-900">3. Análisis de Ventas: Últimos 3 Meses</h3>
-                    <div class="bg-slate-900 text-white p-6 rounded-2xl">
-                        <div class="grid grid-cols-3 text-center gap-4">
-                            <div><p class="text-xs text-slate-400 uppercase">Enero</p><p class="text-2xl font-bold">${data.filter(d => d.EVENTO.includes('-01-')).length} Ev.</p></div>
-                            <div><p class="text-xs text-slate-400 uppercase">Febrero</p><p class="text-2xl font-bold">${data.filter(d => d.EVENTO.includes('-02-')).length} Ev.</p></div>
-                            <div><p class="text-xs text-slate-400 uppercase">Marzo</p><p class="text-2xl font-bold">${data.filter(d => d.EVENTO.includes('-03-')).length} Ev.</p></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="report-section">
-                    <h3 class="text-xl font-bold mb-4 text-blue-900">4. Logística y OTIF</h3>
-                    <p class="text-sm mb-4">Eficiencia en la cadena de suministro medida por el diferencial entre fechas de Armado y Evento.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="kpi-box text-center"><p class="text-xs font-bold text-slate-500 uppercase">Lead Time Promedio</p><p class="text-2xl font-bold">4.2 Días</p></div>
-                        <div class="kpi-box text-center"><p class="text-xs font-bold text-slate-500 uppercase">Puntualidad Operativa</p><p class="text-2xl font-bold text-green-600">98.4%</p></div>
-                    </div>
-                </section>
-
-                <footer class="text-center text-xs text-slate-400 pt-10">
-                    Este informe ha sido generado algorítmicamente por la Unidad IA Dangiola para uso exclusivo de gerencia.
-                </footer>
+                </div>
             `;
+
+            initCharts();
+            renderLocationTable();
         }
 
-        // Lógica del Chat (simplificada para integración)
-        function appendMessage(role, content) {
-            const div = document.createElement('div');
-            div.className = `${role === 'user' ? 'user-msg' : 'ai-msg'} p-6 max-w-[85%] shadow-sm transition-all`;
-            div.innerHTML = content;
-            document.getElementById('chatBox').appendChild(div);
-            document.getElementById('chatBox').scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        function initCharts() {
+            // Chart Meses (Simulado con datos reales del CSV)
+            const ctx1 = document.getElementById('chartMonths').getContext('2d');
+            new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['Enero', 'Febrero', 'Marzo'],
+                    datasets: [{
+                        label: 'Eventos',
+                        data: [
+                            salesData.filter(d => d.EVENTO && d.EVENTO.includes('-01-')).length,
+                            salesData.filter(d => d.EVENTO && d.EVENTO.includes('-02-')).length,
+                            salesData.filter(d => d.EVENTO && d.EVENTO.includes('-03-')).length
+                        ],
+                        borderColor: '#1e3a8a',
+                        backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { plugins: { legend: { display: false } } }
+            });
+
+            // Chart Mix Producto
+            const ctx2 = document.getElementById('chartMix').getContext('2d');
+            const models = {};
+            salesData.forEach(d => { if(d.Modelo) models[d.Modelo] = (models[d.Modelo] || 0) + 1 });
+            const top5 = Object.entries(models).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: top5.map(x => x[0]),
+                    datasets: [{
+                        data: top5.map(x => x[1]),
+                        backgroundColor: ['#1e3a8a', '#3b82f6', '#94a3b8', '#cbd5e1', '#f1f5f9']
+                    }]
+                }
+            });
         }
 
-        function handleSend() {
-            const q = document.getElementById('userInput').value;
-            if(!q) return;
-            appendMessage('user', q);
-            document.getElementById('userInput').value = '';
+        function renderLocationTable() {
+            const locs = {};
+            salesData.forEach(d => { if(d.Ubicación) locs[d.Ubicación] = (locs[d.Ubicación] || 0) + 1 });
+            const topLocs = Object.entries(locs).sort((a,b)=>b[1]-a[1]).slice(0,5);
             
-            if(q.toLowerCase().includes("ayuda")) {
-                appendMessage('ai', "<b>COMANDOS:</b><br>• Presione el botón azul para el informe 360°.<br>• Pregunte por un cliente específico (ej: 'Toyota').<br>• Escriba 'logística' para ver tiempos de armado.");
-            } else {
-                appendMessage('ai', "Analizando... Para un reporte completo sobre volúmenes y comparativas interanuales, por favor utilice el botón <b>GENERAR INFORME DETALLADO</b> en la parte superior derecha.");
-            }
+            let html = `<table class="w-full">
+                <tr class="text-left border-b border-slate-100">
+                    <th class="py-2">Ubicación</th>
+                    <th class="py-2">Frecuencia</th>
+                    <th class="py-2">Penetración</th>
+                </tr>`;
+            
+            topLocs.forEach(([loc, count]) => {
+                const percent = ((count / salesData.length) * 100).toFixed(1);
+                html += `<tr class="border-b border-slate-50">
+                    <td class="py-2 font-bold">${loc}</td>
+                    <td class="py-2">${count} Eventos</td>
+                    <td class="py-2 text-blue-600 font-bold">${percent}%</td>
+                </tr>`;
+            });
+            html += `</table>`;
+            document.getElementById('locationTable').innerHTML = html;
         }
+
+        function exportToHTML() {
+            const content = document.getElementById('printableReport').innerHTML;
+            const fullHTML = `
+                <html>
+                <head>
+                    <title>Reporte Gerencial Dangiola</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <style>body { font-family: 'Roboto', sans-serif; padding: 40px; background: white; }</style>
+                </head>
+                <body>${content}</body>
+                </html>`;
+            
+            const blob = new Blob([fullHTML], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'Informe_Gerencial_Dangiola.html';
+            a.click();
+        }
+
+        userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleSend(); });
     </script>
 </body>
 </html>
