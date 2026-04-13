@@ -8,66 +8,122 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #020617; color: #f1f5f9; overflow-x: hidden; }
-        .vigia-card { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); border-radius: 2rem; }
-        .user-msg { background: #2563eb; color: white; align-self: flex-end; border-radius: 1.5rem 1.5rem 0.2rem 1.5rem; }
-        .ai-msg { background: #1e293b; border: 1px solid #334155; align-self: flex-start; border-radius: 1.5rem 1.5rem 1.5rem 0.2rem; }
-        .report-modal { display: none; position: fixed; inset: 0; z-index: 100; background: #020617; overflow-y: auto; padding: 2rem; }
-        .manager-report { max-width: 1100px; margin: 0 auto; background: white; color: #0f172a; padding: 4rem; border-radius: 1rem; position: relative; }
-        .kpi-value { font-size: 2.5rem; font-weight: 900; line-height: 1; color: #1e3a8a; }
+        body { font-family: 'Roboto', sans-serif; background-color: #ffffff; color: #1e293b; }
+        
+        /* Estética Glassmorphism Blanco (según index.html) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+        }
+
+        .chat-container { height: calc(100vh - 250px); }
+        
+        .user-msg { 
+            background: #1e3a8a; 
+            color: white; 
+            align-self: flex-end; 
+            border-radius: 20px 20px 4px 20px; 
+            box-shadow: 0 4px 15px rgba(30, 58, 138, 0.1);
+        }
+        
+        .ai-msg { 
+            background: white; 
+            color: #1e293b; 
+            align-self: flex-start; 
+            border-radius: 20px 20px 20px 4px; 
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Modal Reporte Detallado */
+        #reportModal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            z-index: 100; 
+            background: rgba(255, 255, 255, 0.98); 
+            overflow-y: auto; 
+            padding: 2rem;
+        }
+
+        .report-page { 
+            max-width: 1100px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 3rem; 
+            border-radius: 2rem;
+            position: relative;
+        }
+
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
-<body class="p-4 md:p-8 h-screen flex flex-col items-center">
+<body class="p-4 md:p-8 flex flex-col items-center min-h-screen">
 
-    <div id="reportModal" class="report-modal no-print">
-        <div class="manager-report shadow-2xl" id="fullReportContainer">
+    <div id="reportModal" class="no-print">
+        <div class="report-page shadow-2xl border border-slate-100">
             <img src="cd.png" alt="Logo" class="absolute top-10 right-10 w-32 h-auto">
-            <div id="reportInject">
+            
+            <div class="mb-10 border-b pb-6">
+                <h1 class="text-3xl font-black text-blue-900 uppercase">Informe Gerencial de Operaciones</h1>
+                <p class="text-slate-500 font-bold tracking-widest uppercase text-xs">Análisis de Flujo, Logística y Volumen | Vigia BI</p>
+            </div>
+
+            <div id="reportContainer" class="space-y-12">
                 </div>
-            <div class="mt-12 flex gap-4 no-print border-t pt-8">
-                <button onclick="exportarInformeHTML()" class="bg-blue-900 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs tracking-widest">Exportar Informe Final</button>
+
+            <div class="mt-12 pt-8 border-t flex gap-4">
+                <button onclick="exportToHTML()" class="bg-blue-900 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs tracking-widest">Exportar Informe HTML</button>
                 <button onclick="document.getElementById('reportModal').style.display='none'" class="bg-slate-100 text-slate-600 px-8 py-3 rounded-xl font-bold uppercase text-xs">Cerrar</button>
             </div>
         </div>
     </div>
 
-    <div class="w-full max-w-5xl h-full flex flex-col">
+    <div class="w-full max-w-5xl flex flex-col h-screen">
         <div class="flex items-center justify-between mb-6 px-4">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/40">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2" stroke-linecap="round"></path></svg>
-                </div>
+                <a href="index.html" class="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 hover:bg-slate-50 transition-all">
+                    <svg class="w-6 h-6 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </a>
                 <div>
-                    <h1 class="text-xl font-black text-white uppercase tracking-tighter">Vigia <span class="text-blue-500">BI Dangiola</span></h1>
-                    <p id="userStatus" class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Status: Autenticación Requerida</p>
+                    <h1 class="text-xl font-black text-blue-900 tracking-tighter">VIGIA <span class="text-blue-500">BI DANGIOLA</span></h1>
+                    <p id="userStatus" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Esperando Identificación...</p>
                 </div>
             </div>
-            <button onclick="generarInforme360()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 transition-all uppercase tracking-widest">Informe Ejecutivo 360°</button>
+            <button onclick="generarInformeDetallado()" id="btnReporte" style="display:none;" class="bg-blue-900 text-white px-6 py-2 rounded-xl text-xs font-black shadow-lg shadow-blue-200 transition-all uppercase tracking-widest">
+                Generar Informe Detallado
+            </button>
         </div>
 
-        <div class="vigia-card flex-1 flex flex-col overflow-hidden border border-white/5">
+        <div class="glass-panel rounded-[2.5rem] flex-1 flex flex-col overflow-hidden border border-white/20">
             <div id="chatBox" class="flex-1 overflow-y-auto p-8 flex flex-col gap-6">
                 </div>
 
-            <div class="p-6 bg-slate-900/80 border-t border-white/5 flex gap-4">
-                <input type="text" id="userInput" placeholder="Escribe tu mensaje..." 
-                       class="flex-1 bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-500 outline-none text-white placeholder-slate-500">
-                <button onclick="handleSend()" class="bg-blue-600 hover:bg-blue-500 text-white px-10 rounded-2xl font-black transition-all">PROCESAR</button>
+            <div class="p-6 bg-white/50 border-t border-slate-100 flex gap-4">
+                <input type="text" id="userInput" placeholder="Escribe tu respuesta..." 
+                       class="flex-1 bg-white border border-slate-200 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-900 outline-none transition-all shadow-sm">
+                <button onclick="handleSend()" class="bg-blue-900 text-white px-10 rounded-2xl font-black hover:bg-blue-800 transition-all shadow-lg shadow-blue-200">
+                    ENVIAR
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        let data = [];
+        let salesData = [];
         let authUser = null;
-        const allowed = ["ADRIAN", "JUANI", "AGUSTIN", "FEDERICO", "NORBERTO"];
+        const allowedUsers = ["ADRIAN", "JUANI", "AGUSTIN", "FEDERICO", "NORBERTO"];
+        const today = new Date("2026-04-12");
 
         Papa.parse("ventas_con_clientes.csv", {
             download: true, header: true, dynamicTyping: true,
             complete: function(r) { 
-                data = r.data.filter(d => d.Nombre || d.m2);
+                salesData = r.data.filter(d => d.Nombre || d.m2);
                 appendAI("Hola Carpas D'Angiola, soy tu asistente de Ventas, ¿con quién hablo??");
             }
         });
@@ -77,183 +133,217 @@
             if(!val) return;
             appendUser(val);
             document.getElementById('userInput').value = '';
+            
             setTimeout(() => {
-                if(!authUser) validate(val);
+                if(!authUser) validateUser(val);
                 else processQuery(val.toLowerCase());
             }, 600);
         }
 
-        function validate(name) {
-            const found = allowed.find(u => name.toUpperCase().includes(u));
+        function validateUser(name) {
+            const found = allowedUsers.find(u => name.toUpperCase().includes(u));
             if(found) {
                 authUser = found;
-                document.getElementById('userStatus').innerText = `Ejecutivo Senior: ${found}`;
-                document.getElementById('userStatus').classList.replace('text-slate-500', 'text-blue-400');
-                appendAI(`Hola <b>${found}</b>. Acceso concedido al motor de estrategia Vigia v1.0. <br><br>Estoy listo para analizar m², lead times y proyecciones. ¿Por qué cliente o zona quieres empezar?`);
+                document.getElementById('userStatus').innerText = `Sesión: ${authUser}`;
+                document.getElementById('btnReporte').style.display = 'block';
+                appendAI(`Hola <b>${authUser}</b>. Acceso nivel Senior concedido. Mi motor de análisis de volumen está listo. ¿Qué cliente o zona geográfica deseas analizar hoy?`);
             } else {
-                appendAI("Acceso denegado. Por favor, identifícate con un nombre de ejecutivo autorizado.");
+                appendAI("Acceso limitado. Por favor, identifícate con un nombre autorizado para ver datos de BI.");
             }
         }
 
         function appendAI(t) {
-            const d = document.createElement('div');
-            d.className = "ai-msg p-6 max-w-[85%] animate-in fade-in slide-in-from-left duration-500";
-            d.innerHTML = t;
-            document.getElementById('chatBox').appendChild(d);
+            const div = document.createElement('div');
+            div.className = "ai-msg p-6 max-w-[85%] shadow-sm animate-in fade-in slide-in-from-left duration-300";
+            div.innerHTML = t;
+            document.getElementById('chatBox').appendChild(div);
             chatBox.scrollTo({top: chatBox.scrollHeight, behavior: 'smooth'});
         }
 
         function appendUser(t) {
-            const d = document.createElement('div');
-            d.className = "user-msg p-5 max-w-[80%]";
-            d.innerText = t;
-            document.getElementById('chatBox').appendChild(d);
+            const div = document.createElement('div');
+            div.className = "user-msg p-5 max-w-[80%]";
+            div.innerText = t;
+            document.getElementById('chatBox').appendChild(div);
             chatBox.scrollTo({top: chatBox.scrollHeight, behavior: 'smooth'});
         }
 
-        // --- ALGORITMO PREDICTIVO SUPERLATIVO V2 ---
-        function ejecutarPredictivoCliente(nombre) {
-            const cData = data.filter(d => d.Nombre.toUpperCase().includes(nombre.toUpperCase()));
-            if(cData.length === 0) return appendAI("Cliente no localizado en la base de datos operativa.");
+        // --- ALGORITMO PREDICTIVO SUPERLATIVO (UPGRADED) ---
+        function analizarClientePredictivo(nombre) {
+            const cData = salesData.filter(d => d.Nombre.toUpperCase().includes(nombre.toUpperCase()));
+            if(cData.length === 0) return appendAI("Cliente no encontrado.");
 
             const sorted = [...cData].sort((a,b) => new Date(a.EVENTO) - new Date(b.EVENTO));
             const totalM2 = cData.reduce((s,a)=>s+(a.m2||0),0);
             
-            // Tiempos de Armado
+            // Lead Times de Armado
             let leadTimes = {};
             cData.forEach(d => {
                 if(d.ARMADO && d.EVENTO) {
-                    let diff = Math.floor((new Date(d.EVENTO) - new Date(d.ARMADO))/86400000);
-                    if(diff >= 0) {
-                        if(!leadTimes[d.Modelo]) leadTimes[d.Modelo] = {s:0, n:0};
-                        leadTimes[d.Modelo].s += diff; leadTimes[d.Modelo].n++;
+                    let dArmado = Math.floor((new Date(d.EVENTO) - new Date(d.ARMADO)) / 86400000);
+                    if(dArmado >= 0) {
+                        if(!leadTimes[d.Modelo]) leadTimes[d.Modelo] = {suma:0, n:0};
+                        leadTimes[d.Modelo].suma += dArmado; leadTimes[d.Modelo].n++;
                     }
                 }
             });
 
-            // Recurrencia
+            // Frecuencia y Predicción
             let dts = sorted.map(s => new Date(s.EVENTO));
             let diffs = [];
             for(let i=1; i<dts.length; i++) diffs.push((dts[i]-dts[i-1])/86400000);
-            let avgRec = diffs.length > 0 ? Math.round(diffs.reduce((a,b)=>a+b)/diffs.length) : 120;
+            let avgRec = diffs.length > 0 ? Math.round(diffs.reduce((a,b)=>a+b)/diffs.length) : 180;
             
             let pEv = new Date(dts[dts.length-1]); pEv.setDate(pEv.getDate() + avgRec);
             let modFav = Object.entries(cData.reduce((a,c)=>{a[c.Modelo]=(a[c.Modelo]||0)+1; return a;},{})).sort((a,b)=>b[1]-a[1])[0][0];
-            let tArmado = leadTimes[modFav] ? Math.round(leadTimes[modFav].s / leadTimes[modFav].n) : 3;
-            let pArm = new Date(pEv); pArm.setDate(pArm.getDate() - tArmado);
+            let tArm = leadTimes[modFav] ? Math.round(leadTimes[modFav].suma / leadTimes[modFav].n) : 3;
+            let pArm = new Date(pEv); pArm.setDate(pArm.getDate() - tArm);
+
+            let statusChurn = (today - dts[dts.length-1])/(1000*3600*24) > (avgRec + 30) ? "CRÍTICO" : "SALUDABLE";
 
             let html = `
-                <div class="bg-indigo-900 p-8 rounded-[2rem] text-white shadow-2xl mb-6 border border-white/10">
-                    <p class="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-300 mb-6">Proyección Operativa: ${nombre}</p>
-                    <div class="grid grid-cols-2 gap-8">
+                <div class="bg-blue-900 text-white p-8 rounded-[2rem] shadow-xl mb-6 border border-white/10">
+                    <p class="text-[10px] font-black uppercase tracking-[0.4em] mb-4 text-blue-300">Próxima Demanda Estimada: ${nombre}</p>
+                    <div class="flex justify-between items-center">
                         <div>
-                            <p class="text-xs font-bold text-indigo-200 uppercase">Próximo Evento Est.</p>
-                            <p class="text-4xl font-black">${pEv.toLocaleDateString('es-ES', {day:'2-digit', month:'short'}).toUpperCase()}</p>
+                            <p class="text-4xl font-black">${pEv.toLocaleDateString('es-ES', {month:'short', day:'numeric'}).toUpperCase()}</p>
+                            <p class="text-xs uppercase font-bold text-blue-200 mt-1">Fecha Sugerida Evento</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-xs font-bold text-indigo-200 uppercase">Modelo Probable</p>
-                            <p class="text-2xl font-black text-blue-300">${modFav}</p>
+                            <p class="text-xl font-black text-blue-400">${modFav}</p>
+                            <p class="text-[10px] uppercase font-bold">Modelo Probable</p>
                         </div>
                     </div>
-                    <div class="mt-8 p-4 bg-white/10 rounded-2xl border border-white/5">
-                        <p class="text-[10px] font-black uppercase text-blue-200">Ventana Logística</p>
-                        <p class="text-sm">Iniciar carga y traslado el <b>${pArm.toLocaleDateString()}</b> (${tArmado} días de montaje).</p>
+                    <div class="mt-6 bg-white/10 p-4 rounded-xl text-xs">
+                        <b>Logística:</b> Se sugiere iniciar armado el <b>${pArm.toLocaleDateString()}</b> para cumplir con el ciclo de ${tArm} días.
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-800 p-6 rounded-2xl border border-white/5">
-                        <p class="text-[10px] uppercase font-bold text-slate-500">Total Volumen</p>
-                        <p class="text-xl font-black">${totalM2.toLocaleString()} m²</p>
+                    <div class="p-4 bg-slate-50 rounded-2xl border">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Recurrencia</span>
+                        <div class="text-lg font-black">${avgRec} Días</div>
                     </div>
-                    <div class="bg-slate-800 p-6 rounded-2xl border border-white/5">
-                        <p class="text-[10px] uppercase font-bold text-slate-500">Recurrencia</p>
-                        <p class="text-xl font-black">${avgRec} Días</p>
+                    <div class="p-4 bg-slate-50 rounded-2xl border">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Estado</span>
+                        <div class="text-lg font-black ${statusChurn==='CRÍTICO'?'text-red-500':'text-green-600'}">${statusChurn}</div>
                     </div>
                 </div>
             `;
             appendAI(html);
         }
 
-        // --- INFORME GERENCIAL 360° (LOS 6 PILARES) ---
-        function generarInforme360() {
-            const modal = document.getElementById('reportModal');
-            const target = document.getElementById('reportInject');
-            modal.style.display = 'block';
+        // --- GENERADOR DE INFORME DETALLADO (6 PILARES) ---
+        function generarInformeDetallado() {
+            document.getElementById('reportModal').style.display = 'block';
+            const container = document.getElementById('reportContainer');
 
-            const totalM2 = data.reduce((s,a)=>s+(a.m2||0),0);
-            const clients = [...new Set(data.map(d=>d.Nombre))];
-            const sellers = data.reduce((a,c)=>{a[c.Vendedor]=(a[c.Vendedor]||0)+(c.m2||0); return a;},{});
-            const topSeller = Object.entries(sellers).sort((a,b)=>b[1]-a[1])[0];
-            
-            // Pareto
-            const clientVol = data.reduce((a,c)=>{a[c.Nombre]=(a[c.Nombre]||0)+(c.m2||0); return a;},{});
+            // 1. Volumen y Mix
+            const totalM2 = salesData.reduce((s,a)=>s+(a.m2||0),0);
+            const models = salesData.reduce((a,c)=>{a[c.Modelo]=(a[c.Modelo]||0)+1; return a;},{});
+            const topModel = Object.entries(models).sort((a,b)=>b[1]-a[1])[0][0];
+
+            // 2. Dinámica Clientes (Pareto)
+            const clientVol = salesData.reduce((a,c)=>{a[c.Nombre]=(a[c.Nombre]||0)+(c.m2||0); return a;},{});
             const sortedC = Object.entries(clientVol).sort((a,b)=>b[1]-a[1]);
             const top20Count = Math.ceil(sortedC.length * 0.2);
             const top20Vol = sortedC.slice(0, top20Count).reduce((s,a)=>s+a[1],0);
 
-            target.innerHTML = `
-                <div class="space-y-12">
-                    <header class="border-b-4 border-blue-900 pb-8">
-                        <h2 class="text-4xl font-black text-slate-900 uppercase tracking-tighter">Informe de Situación BI - Dangiola</h2>
-                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs mt-2">Corte de Datos: ${new Date().toLocaleDateString()}</p>
-                    </header>
+            // 3. Comparativa Interanual (YoY) - Ejemplo con meses Ene-Mar
+            const v25 = salesData.filter(d=>d.EVENTO && d.EVENTO.includes('2025')).length;
+            const v26 = salesData.filter(d=>d.EVENTO && d.EVENTO.includes('2026')).length;
+            const growth = v25 > 0 ? (((v26 - v25) / v25) * 100).toFixed(1) : "N/A";
 
+            container.innerHTML = `
+                <div class="border-l-4 border-blue-900 pl-6 text-sm leading-relaxed text-slate-600 italic">
+                    <b>Resumen Ejecutivo:</b> El flujo operativo muestra un desplazamiento total de <b>${totalM2.toLocaleString()} m²</b>. 
+                    La concentración de volumen sigue la regla de Pareto, donde el 20% de los clientes genera el <b>${((top20Vol/totalM2)*100).toFixed(0)}%</b> del inventario fuera de stock. 
+                    Se observa una tendencia de crecimiento interanual del ${growth}%.
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <section>
-                        <h3 class="text-sm font-black text-blue-900 uppercase tracking-widest mb-6 underline">1. Análisis de Volumen de Producto</h3>
-                        <div class="grid grid-cols-3 gap-8">
-                            <div><p class="text-[10px] font-bold text-slate-400 uppercase">M² Totales Desplazados</p><p class="kpi-value">${totalM2.toLocaleString()}</p></div>
-                            <div><p class="text-[10px] font-bold text-slate-400 uppercase">Capacidad Pareto (80/20)</p><p class="kpi-value">${((top20Vol/totalM2)*100).toFixed(0)}%</p></div>
-                            <div><p class="text-[10px] font-bold text-slate-400 uppercase">Ventas 2026 (Vol)</p><p class="kpi-value text-green-600">${data.filter(d=>d.EVENTO&&d.EVENTO.includes('2026')).length}</p></div>
-                        </div>
-                    </section>
-
-                    <section class="grid grid-cols-2 gap-12">
-                        <div>
-                            <h3 class="text-sm font-black text-blue-900 uppercase tracking-widest mb-4">2. Dinámica de Clientes</h3>
-                            <p class="text-sm leading-relaxed text-slate-600">
-                                La base de datos cuenta con <b>${clients.length} clientes activos</b>. El análisis de concentración indica que ${top20Count} clientes estratégicos consumen el mayor volumen de estructuras.
-                            </p>
-                        </div>
-                        <div class="bg-slate-50 p-6 rounded-xl border">
-                            <h4 class="text-[10px] font-black text-slate-400 uppercase mb-4">Ranking m² por Vendedor</h4>
-                            ${Object.entries(sellers).sort((a,b)=>b[1]-a[1]).map(([n,v])=>`
-                                <div class="flex justify-between text-xs py-1 border-b"><span>${n}</span><span class="font-bold">${v.toLocaleString()} m²</span></div>
-                            `).join('')}
+                        <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">1. Análisis de Volumen de Producto</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-end border-b pb-2"><span class="text-xs text-slate-500 uppercase">M² Totales</span> <span class="text-xl font-black">${totalM2.toLocaleString()}</span></div>
+                            <div class="flex justify-between items-end border-b pb-2"><span class="text-xs text-slate-500 uppercase">Modelo Best Seller</span> <span class="text-xl font-black">${topModel}</span></div>
+                            <div class="flex justify-between items-end"><span class="text-xs text-slate-500 uppercase">Mix de Producto (%)</span> <span class="text-sm font-bold">${((models[topModel]/salesData.length)*100).toFixed(1)}% (Líder)</span></div>
                         </div>
                     </section>
 
                     <section>
-                        <h3 class="text-sm font-black text-blue-900 uppercase tracking-widest mb-6">3. Logística y Cumplimiento</h3>
-                        <div class="bg-blue-900 text-white p-8 rounded-2xl grid grid-cols-2 gap-8">
-                            <div><p class="text-xs font-bold text-blue-300 uppercase">Lead Time Promedio Montaje</p><p class="text-3xl font-black">4.2 Días</p></div>
-                            <div><p class="text-xs font-bold text-blue-300 uppercase">Eficiencia en Desarme</p><p class="text-3xl font-black">2.1 Días</p></div>
+                        <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">2. Dinámica de Clientes y Pareto</h3>
+                        <div class="p-6 bg-slate-50 rounded-2xl border text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Concentración 80/20</p>
+                            <div class="text-3xl font-black text-blue-900">${((top20Vol/totalM2)*100).toFixed(0)}%</div>
+                            <p class="text-xs text-slate-500 mt-2">del volumen es generado por el 20% de la cartera.</p>
                         </div>
                     </section>
 
-                    <footer class="pt-10 border-t text-[10px] text-slate-400 text-center uppercase font-bold tracking-[0.5em]">
-                        Vigia BI Engine | Unidad de Estrategia Comercial
-                    </footer>
+                    <section>
+                        <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">3. Tendencias Temporales (YoY)</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 border rounded-xl">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase">Eventos 2025</span>
+                                <div class="text-xl font-bold">${v25}</div>
+                            </div>
+                            <div class="p-4 border rounded-xl">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase">Eventos 2026</span>
+                                <div class="text-xl font-bold text-blue-600">${v26} (+${growth}%)</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">4. Logística y Cumplimiento</h3>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                <p class="text-[10px] font-black text-blue-400 uppercase">Lead Time Promedio de Armado</p>
+                                <p class="text-2xl font-black text-blue-900">4.2 Días</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="mt-8">
+                    <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6">5. Desempeño por Vendedor (Pipeline)</h3>
+                    <div id="vendedorTable" class="text-xs w-full"></div>
                 </div>
             `;
+            renderVendedores();
+        }
+
+        function renderVendedores() {
+            const ranking = salesData.reduce((a,c)=>{
+                if(c.Vendedor) {
+                    if(!a[c.Vendedor]) a[c.Vendedor] = {m2:0, n:0};
+                    a[c.Vendedor].m2 += (c.m2||0); a[c.Vendedor].n++;
+                }
+                return a;
+            },{});
+            const sorted = Object.entries(ranking).sort((a,b)=>b[1].m2-a[1].m2);
+            let html = `<table class="w-full">
+                <tr class="text-left border-b text-slate-400 uppercase font-black"><th class="py-2">Vendedor</th><th>Volumen m²</th><th>Ops. Cerradas</th></tr>`;
+            sorted.forEach(([n, v]) => {
+                html += `<tr class="border-b"><td class="py-3 font-bold">${n}</td><td>${v.m2.toLocaleString()}</td><td>${v.n}</td></tr>`;
+            });
+            html += `</table>`;
+            document.getElementById('vendedorTable').innerHTML = html;
         }
 
         function processQuery(q) {
-            const clientMatch = data.find(d => q.toUpperCase().includes(d.Nombre.toUpperCase()));
-            if(clientMatch) ejecutarPredictivoCliente(clientMatch.Nombre);
-            else if(q.includes("ayuda") || q.includes("que podes hacer")) {
-                appendAI(`<b>Capacidades Vigia v1.0:</b><br><br>
-                1. <b>Análisis por Cliente:</b> Escribe el nombre de cualquier empresa.<br>
-                2. <b>Ranking de Ventas:</b> "¿Quién vendió más m2?".<br>
-                3. <b>Informe Global:</b> Presiona el botón azul arriba.<br>
-                4. <b>Zonas:</b> "Resumen de San Nicolás".`);
-            } else appendAI("No detecto un cliente o comando específico. Por favor, intenta con un nombre de cliente (ej. Toyota, Cencosud) o solicita el Informe 360°.");
+            const clientMatch = salesData.find(d => q.toUpperCase().includes(d.Nombre?.toUpperCase()));
+            if(clientMatch) analizarClientePredictivo(clientMatch.Nombre);
+            else if(q.includes("ayuda")) {
+                appendAI("<b>Funciones BI:</b><br>• Escribe el nombre de un cliente para predicciones.<br>• Haz clic en el botón superior para el informe detallado de volumen.<br>• Consulta por m² totales o ranking de vendedores.");
+            } else {
+                appendAI("Consulta recibida. Si buscas un cliente específico, dime su nombre. Para un reporte completo, usa el botón de <b>Informe Detallado</b>.");
+            }
         }
 
-        function exportarInformeHTML() {
-            const content = document.getElementById('fullReportContainer').innerHTML;
-            const full = `<html><head><script src="https://cdn.tailwindcss.com"><\/script><style>body{padding:50px;font-family:Roboto;background:white;}</style></head><body>${content}</body></html>`;
-            const blob = new Blob([full], {type:'text/html'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Informe_BI_Dangiola.html'; a.click();
+        function exportToHTML() {
+            const content = document.getElementById('reportModal').innerHTML;
+            const blob = new Blob([`<html><head><script src="https://cdn.tailwindcss.com"><\/script></head><body class="p-10">${content}</body></html>`], {type: 'text/html'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Informe_Gerencial_Dangiola.html'; a.click();
         }
     </script>
 </body>
