@@ -6,12 +6,17 @@
     <title>Ventas General - Dangiola</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
+        
+        /* Estilo Glassmorphism para los paneles */
         .glass-panel {
             background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(12px);
@@ -19,6 +24,8 @@
             border: 1px solid rgba(226, 232, 240, 0.8);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         }
+
+        /* Scrollbar personalizado */
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -47,7 +54,7 @@
             
             <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
-                    <input type="text" id="filtroCliente" placeholder="Buscar por Nombre..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white/50 focus:outline-none focus:border-blue-500 w-full sm:w-48 font-bold placeholder-slate-400 uppercase">
+                    <input type="text" id="filtroCliente" placeholder="Buscar Cliente..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white/50 focus:outline-none focus:border-blue-500 w-full sm:w-48 font-bold placeholder-slate-400">
                 </div>
                 
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
@@ -69,7 +76,7 @@
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Total Ventas (m²)</h3>
                 <p class="text-4xl font-black text-blue-900 relative z-10" id="kpiTotalVentas">0</p>
-                <p class="text-xs text-slate-500 mt-2 font-medium relative z-10"><span id="kpiConteoEventos">0</span> registros encontrados</p>
+                <p class="text-xs text-slate-500 mt-2 font-medium relative z-10"><span id="kpiConteoEventos">0</span> eventos registrados</p>
             </div>
             <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Top 3 Mejores Clientes</h3>
@@ -83,13 +90,13 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div class="glass-panel rounded-2xl p-6">
-                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Evolución Comercial (m²)</h3>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Evolución de Ventas en el Tiempo (m²)</h3>
                 <div class="relative h-64 w-full">
                     <canvas id="chartEvolucion"></canvas>
                 </div>
             </div>
             <div class="glass-panel rounded-2xl p-6">
-                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Top 10 Modelos (m²)</h3>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4">Top 10 Modelos de Estructuras (m²)</h3>
                 <div class="relative h-64 w-full">
                     <canvas id="chartEstructuras"></canvas>
                 </div>
@@ -98,8 +105,8 @@
 
         <div class="glass-panel rounded-2xl p-6 flex flex-col">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Detalle de Operaciones</h3>
-                <span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase">Logística de Fechas</span>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide">Detalle de Ventas del Período</h3>
+                <span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Scrollea para ver más</span>
             </div>
             
             <div class="overflow-x-auto overflow-y-auto max-h-[600px] custom-scrollbar rounded-lg border border-slate-100 relative">
@@ -109,13 +116,14 @@
                             <th class="p-3 font-bold">Armado</th>
                             <th class="p-3 font-bold">Evento</th>
                             <th class="p-3 font-bold">Desarme</th>
-                            <th class="p-3 font-bold">Nombre Cliente</th>
+                            <th class="p-3 font-bold">Cliente</th>
+                            <th class="p-3 font-bold">Ubicación</th>
                             <th class="p-3 font-bold">Modelo</th>
                             <th class="p-3 font-bold text-right">m²</th>
                         </tr>
                     </thead>
-                    <tbody id="tablaVentasBody" class="text-xs text-slate-600 divide-y divide-slate-100 bg-white">
-                    </tbody>
+                    <tbody id="tablaVentasBody" class="text-sm text-slate-600 divide-y divide-slate-100 bg-white">
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -133,23 +141,22 @@
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: true,
-                delimiter: ";", // NUEVO DELIMITADOR
+                delimiter: ";", // REPARACIÓN: Se agrega delimitador para el nuevo CSV
                 complete: function(results) {
-                    // Filtramos por Nombre como campo principal
-                    datosCompletos = results.data.filter(d => d.Nombre && d.m2 && d.Fecha);
+                    // REPARACIÓN: Filtramos filas que tengan Nombre (columna clave ahora)
+                    datosCompletos = results.data.filter(d => d.Nombre && d.m2);
                     configurarFechasPorDefecto();
                 }
             });
 
             document.getElementById('btnFiltrar').addEventListener('click', actualizarDashboard);
-            document.getElementById('filtroCliente').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') actualizarDashboard();
-            });
+            document.getElementById('filtroCliente').addEventListener('input', actualizarDashboard);
         };
 
         function configurarFechasPorDefecto() {
             if (datosCompletos.length === 0) return;
-            let fechas = datosCompletos.map(d => new Date(d.Fecha).getTime()).filter(t => !isNaN(t));
+            // REPARACIÓN: Usamos Fecha o EVENTO para determinar el rango inicial
+            let fechas = datosCompletos.map(d => new Date(d.Fecha || d.EVENTO).getTime()).filter(t => !isNaN(t));
             let maxDate = new Date(Math.max(...fechas));
             document.getElementById('fechaFin').value = maxDate.toISOString().split('T')[0];
             
@@ -161,21 +168,32 @@
         }
 
         function actualizarDashboard() {
-            const fIn = new Date(document.getElementById('fechaInicio').value);
-            const fOut = new Date(document.getElementById('fechaFin').value);
-            const queryCli = document.getElementById('filtroCliente').value.toLowerCase().trim();
+            const valInicio = document.getElementById('fechaInicio').value;
+            const valFin = document.getElementById('fechaFin').value;
+            const clienteBuscado = document.getElementById('filtroCliente').value.toLowerCase().trim();
             
-            let fOutLimite = new Date(fOut);
-            fOutLimite.setDate(fOutLimite.getDate() + 1);
+            const start = valInicio ? new Date(valInicio) : null;
+            const end = valFin ? new Date(valFin) : null;
+            if (end) end.setDate(end.getDate() + 1);
 
             let filtrados = datosCompletos.filter(d => {
-                let fData = new Date(d.Fecha);
-                let matchFecha = fData >= fIn && fData < fOutLimite;
-                let matchNombre = queryCli === "" || d.Nombre.toLowerCase().includes(queryCli);
-                return matchFecha && matchNombre;
+                // REPARACIÓN: Filtro por Nombre insensible a mayúsculas
+                const matchNombre = clienteBuscado === "" || (d.Nombre && d.Nombre.toString().toLowerCase().includes(clienteBuscado));
+                
+                // REPARACIÓN: Filtro de fecha resiliente a campos vacíos
+                let matchFecha = true;
+                const valFecha = d.Fecha || d.EVENTO || d.ARMADO;
+                if (valFecha) {
+                    const dDate = new Date(valFecha);
+                    if (start && dDate < start) matchFecha = false;
+                    if (end && dDate >= end) matchFecha = false;
+                }
+                
+                return matchNombre && matchFecha;
             });
 
-            filtrados.sort((a, b) => new Date(b.Fecha) - new Date(a.Fecha));
+            // REPARACIÓN: Ordenamiento consistente
+            filtrados.sort((a, b) => new Date(b.EVENTO || b.Fecha) - new Date(a.EVENTO || a.Fecha));
 
             renderKPIs(filtrados);
             renderTabla(filtrados);
@@ -184,49 +202,52 @@
         }
 
         function renderKPIs(datos) {
-            let total = datos.reduce((acc, curr) => acc + (parseFloat(curr.m2) || 0), 0);
-            document.getElementById('kpiTotalVentas').innerText = total.toLocaleString('es-AR');
+            let totalM2 = datos.reduce((acc, curr) => acc + (parseFloat(curr.m2) || 0), 0);
+            document.getElementById('kpiTotalVentas').innerText = totalM2.toLocaleString('es-AR');
             document.getElementById('kpiConteoEventos').innerText = datos.length;
 
-            let porCli = {};
-            let porMod = {};
+            let ventasPorCliente = {};
+            let ventasPorEstructura = {};
 
             datos.forEach(d => {
-                let m = parseFloat(d.m2) || 0;
-                porCli[d.Nombre] = (porCli[d.Nombre] || 0) + m;
-                porMod[d.Modelo] = (porMod[d.Modelo] || 0) + m;
+                let m2 = parseFloat(d.m2) || 0;
+                let cliente = d.Nombre ? d.Nombre.trim() : 'Sin Nombre';
+                let modelo = d.Modelo ? d.Modelo.trim() : 'Sin Modelo';
+                ventasPorCliente[cliente] = (ventasPorCliente[cliente] || 0) + m2;
+                ventasPorEstructura[modelo] = (ventasPorEstructura[modelo] || 0) + m2;
             });
 
-            function renderTop(dict, elId) {
-                let sorted = Object.entries(dict).sort((a,b) => b[1] - a[1]).slice(0, 3);
-                document.getElementById(elId).innerHTML = sorted.map((item, i) => `
-                    <div class="flex justify-between items-center text-[11px]">
-                        <span class="font-bold truncate w-2/3">${i+1}. ${item[0]}</span>
-                        <span class="font-black text-blue-900">${item[1].toLocaleString()} m²</span>
+            function generarTopHTML(diccionario, contenedorId) {
+                let sorted = Object.entries(diccionario).sort((a, b) => b[1] - a[1]).slice(0, 3);
+                document.getElementById(contenedorId).innerHTML = sorted.map((item, index) => `
+                    <div class="flex justify-between items-center text-[11px] font-bold">
+                        <span class="truncate w-3/4 text-slate-600">${index+1}. ${item[0]}</span>
+                        <span class="text-blue-900">${item[1].toLocaleString()} m²</span>
                     </div>`).join('') || '<p class="text-xs text-slate-400">Sin datos</p>';
             }
-            renderTop(porCli, 'kpiTopClientes');
-            renderTop(porMod, 'kpiTopEstructuras');
+
+            generarTopHTML(ventasPorCliente, 'kpiTopClientes');
+            generarTopHTML(ventasPorEstructura, 'kpiTopEstructuras');
         }
 
         function renderTabla(datos) {
-            let html = datos.map(d => `
+            document.getElementById('tablaVentasBody').innerHTML = datos.map(d => `
                 <tr class="hover:bg-blue-50/50 transition-colors text-[11px]">
                     <td class="p-3 text-slate-400 font-bold">${d.ARMADO || '-'}</td>
                     <td class="p-3 font-black text-slate-800 bg-blue-50/20">${d.EVENTO || '-'}</td>
                     <td class="p-3 text-slate-400 font-bold">${d.DESARME || '-'}</td>
-                    <td class="p-3 font-bold text-blue-900 uppercase">${d.Nombre || '-'}</td>
-                    <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">${d.Modelo || '-'}</span></td>
-                    <td class="p-3 font-black text-blue-900 text-right">${parseFloat(d.m2 || 0).toLocaleString('es-AR')}</td>
-                </tr>`).join('');
-            document.getElementById('tablaVentasBody').innerHTML = html || '<tr><td colspan="6" class="p-4 text-center">No hay datos</td></tr>';
+                    <td class="p-3 font-black text-blue-900 uppercase">${d.Nombre || '-'}</td>
+                    <td class="p-3">--</td>
+                    <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-black uppercase text-[9px] border border-slate-200">${d.Modelo || '-'}</span></td>
+                    <td class="p-3 font-black text-blue-600 text-right text-sm">${parseFloat(d.m2 || 0).toLocaleString('es-AR')}</td>
+                </tr>`).join('') || '<tr><td colspan="7" class="p-4 text-center">No hay datos coincidentes</td></tr>';
         }
 
         function renderGraficoEvolucion(datos) {
             let porMes = {};
             datos.forEach(d => {
-                let mes = d.Fecha.substring(0, 7);
-                porMes[mes] = (porMes[mes] || 0) + (parseFloat(d.m2) || 0);
+                let mes = (d.Fecha || d.EVENTO || "").toString().substring(0, 7);
+                if(mes) porMes[mes] = (porMes[mes] || 0) + (parseFloat(d.m2) || 0);
             });
             let labs = Object.keys(porMes).sort();
             if (chartEvolucionInstance) chartEvolucionInstance.destroy();
