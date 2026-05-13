@@ -38,13 +38,13 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 </a>
                 <div>
-                    <h1 class="text-3xl font-black text-blue-950 uppercase tracking-tighter leading-none">BI Predictivo de Cliente</h1>
+                    <h1 class="text-3xl font-black text-blue-955 uppercase tracking-tighter leading-none">BI Predictivo de Cliente</h1>
                     <p class="text-[10px] font-black text-slate-400 tracking-[0.3em] uppercase mt-2">Dangiola S.A. | Business Intelligence Unit</p>
                 </div>
             </div>
             
             <div class="w-full md:w-1/2">
-                <input list="listaClientes" id="filtroCliente" placeholder="ESCRIBA EL NOMBRE DE LA EMPRESA..." class="w-full border-2 border-slate-200 rounded-[1.5rem] px-6 py-4 text-lg font-black text-blue-900 bg-white shadow-2xl focus:border-blue-600 focus:outline-none transition-all placeholder:text-slate-300 uppercase">
+                <input list="listaClientes" id="filtroCliente" placeholder="BUSCAR POR NOMBRE COMERCIAL..." class="w-full border-2 border-slate-200 rounded-[1.5rem] px-6 py-4 text-lg font-black text-blue-900 bg-white shadow-2xl focus:border-blue-600 focus:outline-none transition-all placeholder:text-slate-300 uppercase">
                 <datalist id="listaClientes"></datalist>
             </div>
         </div>
@@ -88,7 +88,7 @@
                     <h2 class="text-3xl font-black leading-tight mb-4 uppercase tracking-tighter">Auditoría IA<br>Predictiva</h2>
                     <p class="text-blue-200 text-sm font-medium leading-relaxed">Ejecuta el análisis de ciclo logístico, detecta retrasos de recompra y predice fechas de armado.</p>
                 </div>
-                <button onclick="ejecutarAnalisisAvanzadoIA()" class="w-full bg-white text-blue-950 font-black py-5 rounded-2xl hover:bg-blue-50 transition-all shadow-lg active:scale-95 uppercase tracking-widest text-xs mt-8">
+                <button onclick="ejecutarAnalisisAvanzadoIA()" class="w-full bg-white text-blue-950 font-black py-5 rounded-2xl hover:bg-blue-50 transition-all shadow-lg active:scale-95 uppercase tracking-widest text-xs mt-8 relative z-10">
                     Generar Auditoría Senior
                 </button>
             </div>
@@ -103,6 +103,7 @@
                             <th class="p-5">F. Armado</th>
                             <th class="p-5 text-blue-900">F. Evento</th>
                             <th class="p-5">F. Desarme</th>
+                            <th class="p-5">Ubicación</th>
                             <th class="p-5 text-center">Estructura</th>
                             <th class="p-5 text-right">m²</th>
                         </tr>
@@ -137,19 +138,23 @@
     </div>
 
     <script>
-        let datosCompletos = [];
-        let datosClienteActual = []; 
+        let db = []; 
+        let cur = [];
         let chartHistorialInstance = null;
 
         window.onload = () => {
             Papa.parse("ventas_con_clientes.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true, 
-                delimiter: ";", // ACTUALIZADO PARA NUEVO CSV
+                delimiter: ";", // AJUSTADO AL NUEVO CSV
                 complete: function(results) {
-                    // Filtrar por Nombre para evitar problemas con IDs vacíos
-                    datosCompletos = results.data.filter(d => d.Nombre && d.Nombre.toString().trim() !== "");
-                    let clis = [...new Set(datosCompletos.map(d => d.Nombre.trim()))].sort();
-                    clis.forEach(c => document.getElementById('listaClientes').innerHTML += `<option value="${c}">`);
+                    // Filtrar por Nombre para evitar problemas con registros sin ID Cliente
+                    db = results.data.filter(d => d.Nombre && d.Nombre.toString().trim() !== "");
+                    let clis = [...new Set(db.map(d => d.Nombre.trim()))].sort();
+                    const datalist = document.getElementById('listaClientes');
+                    datalist.innerHTML = "";
+                    clis.forEach(c => {
+                        datalist.innerHTML += `<option value="${c}">`;
+                    });
                 }
             });
             document.getElementById('filtroCliente').addEventListener('change', actualizarDashboard);
@@ -158,34 +163,40 @@
         function actualizarDashboard() {
             const val = document.getElementById('filtroCliente').value.toUpperCase().trim();
             if(!val) return;
-            // Filtro por Nombre Exacto
-            datosClienteActual = datosCompletos.filter(d => d.Nombre.toUpperCase().trim() === val).sort((a,b) => new Date(b.EVENTO) - new Date(a.EVENTO));
-            if (datosClienteActual.length > 0) {
-                renderKPIs(datosClienteActual);
-                renderTabla(datosClienteActual);
-                renderGrafico(datosClienteActual);
+
+            // Filtro por Nombre Comercial
+            cur = db.filter(d => d.Nombre.toString().toUpperCase().trim() === val)
+                    .sort((a,b) => new Date(b.Fecha || b.EVENTO) - new Date(a.Fecha || a.EVENTO));
+
+            if (cur.length > 0) {
+                renderKPIs(cur);
+                renderTabla(cur);
+                renderGrafico(cur);
             }
         }
 
         function renderKPIs(datos) {
             let m2 = 0; let mods = {}; let vends = {};
-            let ultF = new Date(datos[0].EVENTO);
+            let ultF = new Date(datos[0].Fecha || datos[0].EVENTO);
             let diasI = Math.floor((new Date() - ultF) / 86400000);
 
             datos.forEach(d => {
                 m2 += parseFloat(d.m2) || 0;
-                mods[d.Modelo] = (mods[d.Modelo] || 0) + 1;
-                vends[d.Vendedor] = (vends[d.Vendedor] || 0) + 1;
+                if(d.Modelo) mods[d.Modelo] = (mods[d.Modelo] || 0) + 1;
+                if(d.Vendedor) vends[d.Vendedor] = (vends[d.Vendedor] || 0) + 1;
             });
 
-            document.getElementById('kpiTotalM2').innerText = m2.toLocaleString() + " m²";
-            document.getElementById('kpiModeloFav').innerText = Object.keys(mods).reduce((a,b) => mods[a] > mods[b] ? a : b);
+            document.getElementById('kpiTotalM2').innerText = m2.toLocaleString('es-AR') + " m²";
+            document.getElementById('kpiModeloFav').innerText = Object.keys(mods).length > 0 ? Object.keys(mods).reduce((a,b) => mods[a] > mods[b] ? a : b) : "N/D";
+            
             let sortedV = Object.keys(vends).sort((a,b) => vends[b] - vends[a]);
-            document.getElementById('kpiVendedorFav').innerText = sortedV[0];
+            document.getElementById('kpiVendedorFav').innerText = sortedV.length > 0 ? sortedV[0] : "N/D";
+            document.getElementById('txtSubVendedores').innerText = sortedV.length > 1 ? `Lidera equipo de ${vends[sortedV[0]]} cierres` : "Gestor Exclusivo";
             
             const p = document.getElementById('kpiAlarma');
             const tD = document.getElementById('txtDiasInactivo');
-            tD.innerText = diasI < 0 ? 0 : diasI;
+            tD.innerText = (isNaN(diasI) || diasI < 0) ? 0 : diasI;
+            
             if(diasI <= 90) p.className = "bg-emerald-50 border border-emerald-200 rounded-[2rem] p-7 flex flex-col justify-center min-h-[150px]";
             else if(diasI <= 180) p.className = "bg-amber-50 border border-amber-200 rounded-[2rem] p-7 flex flex-col justify-center min-h-[150px]";
             else p.className = "bg-red-50 border border-red-200 rounded-[2rem] p-7 flex flex-col justify-center min-h-[150px] animate-pulse";
@@ -195,15 +206,23 @@
             document.getElementById('tablaVentasBody').innerHTML = datos.map(d => `
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="p-5 font-bold text-slate-400">${d.ARMADO || '-'}</td>
-                    <td class="p-5 font-black text-slate-800">${d.EVENTO}</td>
+                    <td class="p-5 font-black text-slate-800">${d.EVENTO || d.Fecha || '-'}</td>
                     <td class="p-5 font-bold text-slate-400">${d.DESARME || '-'}</td>
-                    <td class="p-5 text-center"><span class="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-xl font-black uppercase text-[10px] tracking-wider border border-blue-100">${d.Modelo}</span></td>
-                    <td class="p-5 font-black text-blue-900 text-right text-base">${parseFloat(d.m2).toLocaleString()}</td>
+                    <td class="p-5 uppercase font-bold text-slate-500">${d.Ubicación || '-'}</td>
+                    <td class="p-5 text-center"><span class="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-xl font-black uppercase text-[10px] tracking-wider border border-blue-100">${d.Modelo || 'N/D'}</span></td>
+                    <td class="p-5 font-black text-blue-900 text-right text-base">${parseFloat(d.m2 || 0).toLocaleString()}</td>
                 </tr>`).join('');
         }
 
         function renderGrafico(datos) {
-            let c = {}; datos.forEach(d => { if(d.EVENTO) { let f = d.EVENTO.substring(0, 7); c[f] = (c[f] || 0) + 1; } });
+            let c = {}; 
+            datos.forEach(d => { 
+                let fStr = d.Fecha || d.EVENTO;
+                if(fStr) {
+                    let f = fStr.toString().substring(0, 7); 
+                    c[f] = (c[f] || 0) + 1; 
+                }
+            });
             let labs = Object.keys(c).sort();
             if(chartHistorialInstance) chartHistorialInstance.destroy();
             chartHistorialInstance = new Chart(document.getElementById('chartHistorial').getContext('2d'), {
@@ -213,27 +232,26 @@
             });
         }
 
-        // ==========================================
-        // ALGORITMO PREDICTIVO IA SENIOR v3.0
-        // ==========================================
         function ejecutarAnalisisAvanzadoIA() {
-            const cli = document.getElementById('filtroCliente').value.toUpperCase().trim();
             const container = document.getElementById('contenidoIA');
             const header = document.getElementById('modalHeader');
-            if(!cli || datosClienteActual.length === 0) return;
+            if(cur.length === 0) return;
 
             let metrics = {}; 
-            let asc = [...datosClienteActual].sort((a,b) => new Date(a.EVENTO) - new Date(b.EVENTO));
+            let asc = [...cur].sort((a,b) => new Date(a.Fecha || a.EVENTO) - new Date(b.Fecha || b.EVENTO));
 
             // Análisis Técnico por Modelo
-            datosClienteActual.forEach(d => {
+            cur.forEach(d => {
+                if(!d.Modelo) return;
                 if(!metrics[d.Modelo]) metrics[d.Modelo] = { setup: [], breakdown: [], count: 0 };
-                if(d.ARMADO && d.EVENTO) {
-                    let dSet = Math.floor((new Date(d.EVENTO) - new Date(d.ARMADO)) / 86400000);
+                
+                let eventDate = new Date(d.EVENTO || d.Fecha);
+                if(d.ARMADO && !isNaN(eventDate)) {
+                    let dSet = Math.floor((eventDate - new Date(d.ARMADO)) / 86400000);
                     if(dSet >= 0) metrics[d.Modelo].setup.push(dSet);
                 }
-                if(d.DESARME && d.EVENTO) {
-                    let dBreak = Math.floor((new Date(d.DESARME) - new Date(d.EVENTO)) / 86400000);
+                if(d.DESARME && !isNaN(eventDate)) {
+                    let dBreak = Math.floor((new Date(d.DESARME) - eventDate) / 86400000);
                     if(dBreak >= 0) metrics[d.Modelo].breakdown.push(dBreak);
                 }
                 metrics[d.Modelo].count++;
@@ -242,28 +260,31 @@
             // Periodicidad y Alarma
             let diffs = [];
             for(let i=1; i<asc.length; i++) {
-                let d = Math.floor((new Date(asc[i].EVENTO) - new Date(asc[i-1].EVENTO)) / 86400000);
+                let d = Math.floor((new Date(asc[i].Fecha || asc[i].EVENTO) - new Date(asc[i-1].Fecha || asc[i-1].EVENTO)) / 86400000);
                 if(d > 0) diffs.push(d);
             }
             let promRec = diffs.length > 0 ? Math.round(diffs.reduce((a,b)=>a+b)/diffs.length) : 180;
-            let pEvento = new Date(asc[asc.length-1].EVENTO); pEvento.setDate(pEvento.getDate() + promRec);
+            
+            let lastEventDate = new Date(asc[asc.length-1].Fecha || asc[asc.length-1].EVENTO);
+            let pEvento = new Date(lastEventDate.getTime() + (promRec * 86400000));
             
             let hoy = new Date();
             let esAlarma = pEvento < hoy;
             let diasVencimiento = Math.floor((hoy - pEvento) / 86400000);
 
-            // Favoritos y Carga
-            let mods = {}; datosClienteActual.forEach(d => mods[d.Modelo] = (mods[d.Modelo] || 0) + 1);
-            let modFav = Object.keys(mods).reduce((a, b) => mods[a] > mods[b] ? a : b);
-            let promA = (metrics[modFav].setup.length > 0) ? Math.round(metrics[modFav].setup.reduce((a,b)=>a+b)/metrics[modFav].setup.length) : 2;
-            let pCarga = new Date(pEvento); pCarga.setDate(pCarga.getDate() - promA);
+            // Favoritos y Logística
+            let mods = {}; cur.forEach(d => { if(d.Modelo) mods[d.Modelo] = (mods[d.Modelo] || 0) + 1; });
+            let modFav = Object.keys(mods).length > 0 ? Object.keys(mods).reduce((a, b) => mods[a] > mods[b] ? a : b) : "Estructura estándar";
+            
+            let promA = (metrics[modFav] && metrics[modFav].setup.length > 0) ? Math.round(metrics[modFav].setup.reduce((a,b)=>a+b)/metrics[modFav].setup.length) : 2;
+            let pCarga = new Date(pEvento.getTime() - (promA * 86400000));
 
             if(esAlarma) {
                 header.className = "px-10 py-8 flex justify-between items-center text-white bg-red-600 transition-colors duration-700";
-                document.getElementById('subtituloModal').innerText = `CRÍTICO: VENTA VENCIDA HACE ${diasVencimiento} DÍAS`;
+                document.getElementById('subtituloModal').innerText = `CRÍTICO: VENTA VENCIDA HACE ${diasVencimiento} DÍAS [CITA: v3.0]`;
             } else {
                 header.className = "px-10 py-8 flex justify-between items-center text-white bg-blue-950 transition-colors duration-700";
-                document.getElementById('subtituloModal').innerText = "PROSPECCIÓN EN TIEMPO Y FORMA";
+                document.getElementById('subtituloModal').innerText = "PROSPECCIÓN EN TIEMPO Y FORMA [CITA: v3.0]";
             }
 
             let filas = Object.keys(metrics).map(m => {
@@ -279,7 +300,7 @@
                             <h4 class="text-[11px] font-black uppercase tracking-[0.3em] mb-8 ${esAlarma ? 'text-red-600' : 'text-blue-300'}">Próxima Venta Estimada</h4>
                             <div class="mb-10">
                                 <p class="text-xs font-bold uppercase opacity-60">Fecha sugerida de Evento:</p>
-                                <p class="text-6xl font-black tracking-tighter ${esAlarma ? 'text-red-700' : 'text-white'}">${pEvento.toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</p>
+                                <p class="text-6xl font-black tracking-tighter ${esAlarma ? 'text-red-700' : 'text-white'}">${pEvento.toLocaleDateString('es-ES', {day:'numeric', month:'long', year:'numeric'})}</p>
                             </div>
                             ${esAlarma ? `<div class="bg-red-600 text-white p-6 rounded-[2rem]"><p class="text-sm font-black uppercase mb-1">¡Retraso Detectado!</p><p class="text-xs opacity-90">El cliente excedió su frecuencia de <b>${promRec} días</b>. Contacto inmediato urgente.</p></div>` : 
                             `<div class="bg-white/10 p-6 rounded-[2rem] border border-white/10"><p class="text-sm font-bold">Plan logístico: Carga de estructura el <b>${pCarga.toLocaleDateString()}</b>.</p></div>`}
@@ -289,7 +310,7 @@
                             <div class="space-y-6">
                                 <div class="flex justify-between items-center border-b border-slate-50 pb-4"><span class="text-xs font-bold text-slate-500 uppercase">Ciclo Histórico</span><span class="text-xl font-black text-slate-900">${promRec} días</span></div>
                                 <div class="flex justify-between items-center border-b border-slate-50 pb-4"><span class="text-xs font-bold text-slate-500 uppercase">Modelo Estrella</span><span class="text-xl font-black text-indigo-600">${modFav}</span></div>
-                                <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-500 uppercase">Ticket m² Medio</span><span class="text-xl font-black text-slate-900">${(datosClienteActual.reduce((a,b)=>a+(parseFloat(b.m2)||0),0)/datosClienteActual.length).toFixed(0)} m²</span></div>
+                                <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-500 uppercase">Ticket m² Medio</span><span class="text-xl font-black text-slate-900">${(cur.reduce((a,b)=>a+(parseFloat(b.m2)||0),0)/cur.length).toFixed(0)} m²</span></div>
                             </div>
                         </div>
                     </div>
