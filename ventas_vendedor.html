@@ -118,7 +118,7 @@
     </main>
 
     <div id="modalIA" class="fixed inset-0 z-[2000] hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md transition-opacity">
-        <div class="glass-modal rounded-[3rem] w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="glass-modal rounded-[3rem] w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
             <div class="bg-blue-950 px-8 py-6 flex justify-between items-center text-white">
                 <div class="flex items-center space-x-4">
                     <div class="bg-blue-600 p-2.5 rounded-xl"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div>
@@ -127,7 +127,7 @@
                 <button onclick="cerrarModalIA()" class="text-white/40 hover:text-white transition-colors"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
             <div class="p-10 overflow-y-auto custom-scrollbar bg-slate-50/30 font-medium leading-relaxed text-slate-700" id="contenidoIA"></div>
-            <div class="px-10 py-6 bg-white border-t border-slate-100 flex justify-end">
+            <div class="px-10 py-8 bg-white border-t border-slate-100 flex justify-end">
                 <button onclick="cerrarModalIA()" class="bg-blue-950 text-white font-black py-4 px-12 rounded-2xl hover:bg-black transition-all uppercase text-xs">Cerrar Informe</button>
             </div>
         </div>
@@ -149,9 +149,9 @@
             initMap();
             Papa.parse("ventas_con_clientes.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true, 
-                delimiter: ";", // ACTUALIZADO PARA EL NUEVO CSV
+                delimiter: ";", // CAMBIO: Ahora usa el delimitador de tu nuevo CSV
                 complete: function(results) {
-                    // Filtrar por Nombre como campo clave para evitar errores con Cliente vacío
+                    // CAMBIO: Filtrado basado en Nombre y Fecha (nuevos campos)
                     datosCompletos = results.data.filter(d => d.Nombre && d.m2 && d.Fecha);
                     configurarFiltrosIniciales();
                 }
@@ -172,7 +172,7 @@
         function configurarFiltrosIniciales() {
             if (datosCompletos.length === 0) return;
             
-            // Llenar vendedores
+            // Llenar dropdown de vendedores
             let vendedores = [...new Set(datosCompletos.map(d => d.Vendedor ? d.Vendedor.trim() : ""))].filter(v => v !== "").sort();
             vendedores.forEach(v => {
                 let opt = document.createElement('option');
@@ -180,7 +180,7 @@
                 document.getElementById('filtroVendedor').appendChild(opt);
             });
 
-            // Fechas por defecto (Últimos 12 meses basado en columna Fecha)
+            // Establecer rango de fechas por defecto usando la columna 'Fecha'
             let fechas = datosCompletos.map(d => new Date(d.Fecha).getTime()).filter(t => !isNaN(t));
             let maxDate = new Date(Math.max(...fechas));
             document.getElementById('fechaFin').value = maxDate.toISOString().split('T')[0];
@@ -192,16 +192,17 @@
         }
 
         function actualizarDashboard() {
-            const fIn = document.getElementById('fechaInicio').value;
-            const fOut = document.getElementById('fechaFin').value;
+            const valIn = document.getElementById('fechaInicio').value;
+            const valOut = document.getElementById('fechaFin').value;
             const vSel = document.getElementById('filtroVendedor').value;
             const cBusq = document.getElementById('filtroCliente').value.toLowerCase().trim();
             
-            const start = fIn ? new Date(fIn) : null;
-            const end = fOut ? new Date(fOut) : null;
+            const start = valIn ? new Date(valIn) : null;
+            const end = valOut ? new Date(valOut) : null;
             if (end) end.setDate(end.getDate() + 1);
 
             datosActualesFiltrados = datosCompletos.filter(d => {
+                // CAMBIO: Se usa la columna 'Fecha' para el filtro de rango
                 const fData = new Date(d.Fecha);
                 const matchVendedor = (vSel === 'Todos' || d.Vendedor === vSel);
                 const matchCliente = cBusq === "" || d.Nombre.toString().toLowerCase().includes(cBusq);
