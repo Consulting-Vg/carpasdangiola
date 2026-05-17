@@ -41,6 +41,7 @@
                 <div>
                     <h1 class="text-3xl font-black text-blue-955 uppercase tracking-tighter leading-none">BI Predictivo de Cliente</h1>
                     <p class="text-[10px] font-black text-slate-400 tracking-[0.3em] uppercase mt-2">Dangiola S.A. | Business Intelligence Unit</p>
+                    <p id="txtPerfilAdmin" class="text-xs font-black text-indigo-600 mt-3 uppercase tracking-wide hidden bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 inline-block"></p>
                 </div>
             </div>
             
@@ -141,16 +142,15 @@
     </div>
 
     <script>
-        let datosCompletos = [];
-        let datosClienteActual = []; 
+        let db = []; 
+        let cur = [];
         let chartHistorialInstance = null;
 
         window.onload = () => {
             Papa.parse("ventas_con_clientes.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
-                delimiter: ";", // Ajustado para el nuevo delimitador del CSV
+                delimiter: ";",
                 complete: function(results) {
-                    // Normalización de campos para compatibilidad con el nuevo CSV (Vendedor 1 como principal)
                     datosCompletos = results.data.map(d => {
                         let fechaRef = d.Fecha || d.EVENTO || d.Fecha_alta;
                         if (fechaRef && typeof fechaRef !== 'string') fechaRef = fechaRef.toString();
@@ -177,11 +177,11 @@
         function actualizarDashboard() {
             const val = document.getElementById('filtroCliente').value.toUpperCase().trim();
             if(!val) return;
-            datosClienteActual = datosCompletos.filter(d => d.Nombre.toUpperCase().trim() === val).sort((a,b) => new Date(b.EVENTO) - new Date(a.EVENTO));
-            if (datosClienteActual.length > 0) {
-                renderKPIs(datosClienteActual);
-                renderTabla(datosClienteActual);
-                renderGrafico(datosClienteActual);
+            cur = datosCompletos.filter(d => d.Nombre.toUpperCase().trim() === val).sort((a,b) => new Date(b.EVENTO) - new Date(a.EVENTO));
+            if (cur.length > 0) {
+                renderKPIs(cur);
+                renderTabla(cur);
+                renderGrafico(cur);
             }
         }
 
@@ -195,6 +195,13 @@
                 mods[d.Modelo] = (mods[d.Modelo] || 0) + 1;
                 vends[d.Vendedor] = (vends[d.Vendedor] || 0) + 1;
             });
+
+            // Inyección del Perfil Fiscal/Administrativo en la interfaz superior
+            const condIVA = datos[0]['Condición IVA'] || 'S/D';
+            const condPago = datos[0]['Condiciónde Pago'] || 'S/D';
+            const txtPerfilAdmin = document.getElementById('txtPerfilAdmin');
+            txtPerfilAdmin.innerText = `IVA: ${condIVA}  |  PAGO: ${condPago}`;
+            txtPerfilAdmin.classList.remove('hidden');
 
             document.getElementById('kpiTotalM2').innerText = m2.toLocaleString() + " m²";
             document.getElementById('kpiModeloFav').innerText = Object.keys(mods).reduce((a,b) => mods[a] > mods[b] ? a : b);
@@ -233,20 +240,16 @@
             });
         }
 
-        // ==========================================
-        // ALGORITMO PREDICTIVO IA SENIOR v3.0
-        // ==========================================
         function ejecutarAnalisisAvanzadoIA() {
             const cli = document.getElementById('filtroCliente').value.toUpperCase().trim();
             const container = document.getElementById('contenidoIA');
             const header = document.getElementById('modalHeader');
-            if(!cli || datosClienteActual.length === 0) return;
+            if(!cli || cur.length === 0) return;
 
             let metrics = {}; 
-            let asc = [...datosClienteActual].sort((a,b) => new Date(a.EVENTO) - new Date(b.EVENTO));
+            let asc = [...cur].sort((a,b) => new Date(a.EVENTO) - new Date(b.EVENTO));
 
-            // 1. Análisis Técnico: Días de Armado y Desarme por Estructura
-            datosClienteActual.forEach(d => {
+            cur.forEach(d => {
                 if(!metrics[d.Modelo]) metrics[d.Modelo] = { setup: [], breakdown: [], count: 0 };
                 
                 if(d.ARMADO && d.EVENTO) {
@@ -260,7 +263,6 @@
                 metrics[d.Modelo].count++;
             });
 
-            // 2. Periodicidad y Alarma de Tiempo Pasado
             let diffs = [];
             for(let i=1; i<asc.length; i++) {
                 let d = Math.floor((new Date(asc[i].EVENTO) - new Date(asc[i-1].EVENTO)) / 86400000);
@@ -275,16 +277,12 @@
             let esAlarma = pEvento < hoy;
             let diasVencimiento = Math.floor((hoy - pEvento) / 86400000);
 
-            // 3. Selección de Estructura Probable y Tiempos de Carga
-            let mods = {}; datosClienteActual.forEach(d => mods[d.Modelo] = (mods[d.Modelo] || 0) + 1);
-            let modFav = Object.keys(mods).reduce((a, b) => mods[a] > mods[b] ? a : b);
+            let mods = {}; cur.forEach(d => mods[d.Modelo] = (mods[d.Modelo] || 0) + 1);
+            let modFav = Object.keys(mods).reduce((a, b) => modelos[a] > modelos[b] ? a : b);
             
-            let promA = (metrics[modFav].setup.length > 0) ? Math.round(metrics[modFav].setup.reduce((a,b)=>a+b)/metrics[modFav].setup.length) : 2;
-            let promD = (metrics[modFav].breakdown.length > 0) ? Math.round(metrics[modFav].breakdown.reduce((a,b)=>a+b)/metrics[modFav].breakdown.length) : 1;
-            
+            let promA = (metrics[modFav] && metrics[modFav].setup.length > 0) ? Math.round(metrics[modFav].setup.reduce((a,b)=>a+b)/metrics[modFav].setup.length) : 2;
             let pCarga = new Date(pEvento); pCarga.setDate(pCarga.getDate() - promA);
 
-            // 4. Estética de la Auditoría
             if(esAlarma) {
                 header.className = "px-10 py-8 flex justify-between items-center text-white bg-red-600 transition-colors duration-700";
                 document.getElementById('subtituloModal').innerText = `CRÍTICO: GESTIÓN COMERCIAL VENCIDA HACE ${diasVencimiento} DÍAS`;
@@ -293,7 +291,6 @@
                 document.getElementById('subtituloModal').innerText = "CALENDARIO OPERATIVO EN TIEMPO Y FORMA";
             }
 
-            // 5. Tabla de Rendimientos por Estructura
             let filas = Object.keys(metrics).map(m => {
                 let a = metrics[m].setup.length > 0 ? (metrics[m].setup.reduce((p,c)=>p+c)/metrics[m].setup.length).toFixed(1) : "-";
                 let d = metrics[m].breakdown.length > 0 ? (metrics[m].breakdown.reduce((p,c)=>p+c)/metrics[m].breakdown.length).toFixed(1) : "-";
@@ -336,19 +333,23 @@
                         </div>
 
                         <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col justify-center">
-                            <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Consistencia de Cuenta</h4>
-                            <div class="space-y-6">
-                                <div class="flex justify-between items-center border-b border-slate-50 pb-4">
+                            <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Consistencia de Cuenta</h4>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center border-b border-slate-50 pb-3">
                                     <span class="text-xs font-bold text-slate-500 uppercase">Ciclo de Recompra</span>
-                                    <span class="text-xl font-black text-slate-900">${promRec} días</span>
+                                    <span class="text-lg font-black text-slate-900">${promRec} días</span>
                                 </div>
-                                <div class="flex justify-between items-center border-b border-slate-50 pb-4">
+                                <div class="flex justify-between items-center border-b border-slate-50 pb-3">
                                     <span class="text-xs font-bold text-slate-500 uppercase">Modelo Dominante</span>
-                                    <span class="text-xl font-black text-indigo-600">${modFav}</span>
+                                    <span class="text-lg font-black text-indigo-600">${cur[0].Modelo}</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-slate-50 pb-3">
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Condición IVA</span>
+                                    <span class="text-sm font-black text-slate-800">${cur[0]['Condición IVA'] || 'S/D'}</span>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="text-xs font-bold text-slate-500 uppercase">Ticket m² Promedio</span>
-                                    <span class="text-xl font-black text-slate-900">${(datosClienteActual.reduce((a,b)=>a+(parseFloat(b.m2)||0),0)/datosClienteActual.length).toFixed(0)} m²</span>
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Condición de Pago</span>
+                                    <span class="text-sm font-black text-slate-800">${cur[0]['Condiciónde Pago'] || 'S/D'}</span>
                                 </div>
                             </div>
                         </div>
@@ -370,9 +371,6 @@
                             </thead>
                             <tbody>${filas}</tbody>
                         </table>
-                        <div class="mt-8 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                            <p class="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-wider italic">Nota Técnica: Los promedios de armado consideran el tiempo desde el ingreso a locación hasta el día del evento. Los de desarme desde el día posterior al evento hasta la liberación del remolque.</p>
-                        </div>
                     </div>
                 </div>`;
             abrirModalIA();
