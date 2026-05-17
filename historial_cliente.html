@@ -142,8 +142,8 @@
     </div>
 
     <script>
-        let db = []; 
-        let cur = [];
+        let datosCompletos = [];
+        let datosClienteActual = []; 
         let chartHistorialInstance = null;
 
         window.onload = () => {
@@ -171,17 +171,20 @@
                     clis.forEach(c => document.getElementById('listaClientes').innerHTML += `<option value="${c}">`);
                 }
             });
-            document.getElementById('filtroCliente').addEventListener('change', actualizarDashboard);
+            // REPARACIÓN: Se cambia 'change' por 'input' para activar la carga inmediatamente al hacer clic en el datalist
+            document.getElementById('filtroCliente').addEventListener('input', actualizarDashboard);
         };
 
         function actualizarDashboard() {
             const val = document.getElementById('filtroCliente').value.toUpperCase().trim();
             if(!val) return;
-            cur = datosCompletos.filter(d => d.Nombre.toUpperCase().trim() === val).sort((a,b) => new Date(b.EVENTO) - new Date(a.EVENTO));
-            if (cur.length > 0) {
-                renderKPIs(cur);
-                renderTabla(cur);
-                renderGrafico(cur);
+            
+            // REPARACIÓN: Se busca directamente sobre la base normalizada unificada 'datosCompletos'
+            datosClienteActual = datosCompletos.filter(d => d.Nombre.toUpperCase().trim() === val).sort((a,b) => new Date(b.EVENTO) - new Date(a.EVENTO));
+            if (datosClienteActual.length > 0) {
+                renderKPIs(datosClienteActual);
+                renderTabla(datosClienteActual);
+                renderGrafico(datosClienteActual);
             }
         }
 
@@ -196,7 +199,6 @@
                 vends[d.Vendedor] = (vends[d.Vendedor] || 0) + 1;
             });
 
-            // Inyección del Perfil Fiscal/Administrativo en la interfaz superior
             const condIVA = datos[0]['Condición IVA'] || 'S/D';
             const condPago = datos[0]['Condiciónde Pago'] || 'S/D';
             const txtPerfilAdmin = document.getElementById('txtPerfilAdmin');
@@ -244,12 +246,12 @@
             const cli = document.getElementById('filtroCliente').value.toUpperCase().trim();
             const container = document.getElementById('contenidoIA');
             const header = document.getElementById('modalHeader');
-            if(!cli || cur.length === 0) return;
+            if(!cli || datosClienteActual.length === 0) return;
 
             let metrics = {}; 
-            let asc = [...cur].sort((a,b) => new Date(a.EVENTO) - new Date(b.EVENTO));
+            let asc = [...datosClienteActual].sort((a,b) => new Date(a.EVENTO) - new Date(b.EVENTO));
 
-            cur.forEach(d => {
+            datosClienteActual.forEach(d => {
                 if(!metrics[d.Modelo]) metrics[d.Modelo] = { setup: [], breakdown: [], count: 0 };
                 
                 if(d.ARMADO && d.EVENTO) {
@@ -277,8 +279,8 @@
             let esAlarma = pEvento < hoy;
             let diasVencimiento = Math.floor((hoy - pEvento) / 86400000);
 
-            let mods = {}; cur.forEach(d => mods[d.Modelo] = (mods[d.Modelo] || 0) + 1);
-            let modFav = Object.keys(mods).reduce((a, b) => modelos[a] > modelos[b] ? a : b);
+            let mods = {}; datosClienteActual.forEach(d => mods[d.Modelo] = (mods[d.Modelo] || 0) + 1);
+            let modFav = Object.keys(mods).reduce((a, b) => mods[a] > mods[b] ? a : b);
             
             let promA = (metrics[modFav] && metrics[modFav].setup.length > 0) ? Math.round(metrics[modFav].setup.reduce((a,b)=>a+b)/metrics[modFav].setup.length) : 2;
             let pCarga = new Date(pEvento); pCarga.setDate(pCarga.getDate() - promA);
@@ -358,7 +360,7 @@
                     <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
                         <div class="flex items-center space-x-3 mb-10">
                             <div class="w-2 h-8 bg-indigo-600 rounded-full"></div>
-                            <h4 class="text-xs font-black text-blue-950 uppercase tracking-[0.3em]">Análisis Técnico de Rendimiento por Estructura</h4>
+                            <h4 class="text-xs font-black text-blue-955 uppercase tracking-[0.3em]">Análisis Técnico de Rendimiento por Estructura</h4>
                         </div>
                         <table class="w-full">
                             <thead>
