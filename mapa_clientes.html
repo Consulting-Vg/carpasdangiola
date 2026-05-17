@@ -83,7 +83,7 @@
     </main>
 
     <script>
-        // NUEVAS Coordenadas exactas de Carpas Dangiola
+        // Coordenadas exactas de Carpas Dangiola
         const BASE_COORDS = [-34.83469460403592, -58.42450930304673]; 
         
         let map;
@@ -133,9 +133,8 @@
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: true,
-                delimiter: ";", // AJUSTE ESPECÍFICO: Delimitador por punto y coma
                 complete: function(results) {
-                    allClients = results.data.filter(c => c.Nombre && c.Latitud && c.Longitud);
+                    allClients = results.data.filter(c => c.Latitud && c.Longitud);
                     renderMarkers(allClients);
                 }
             });
@@ -171,7 +170,6 @@
             
             const latDestino = client.Latitud;
             const lngDestino = client.Longitud;
-            // CORRECCIÓN SINTAXIS: Se corrigió la interpolación de BASE_COORDS en el string template
             const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${BASE_COORDS[0]},${BASE_COORDS[1]}&destination=${latDestino},${lngDestino}&travelmode=driving`;
             
             document.getElementById('btnGoogleMaps').href = mapsUrl;
@@ -202,9 +200,11 @@
                 return; 
             }
 
+            // AJUSTE: El filtro ahora busca de manera flexible sobre 'Cliente' o 'Cuenta'
             const filtered = allClients.filter(c => 
                 (c.Nombre && c.Nombre.toLowerCase().includes(val)) || 
-                (c.Cliente && c.Cliente.toString().includes(val))
+                (c.Cliente && c.Cliente.toString().includes(val)) ||
+                (c.Cuenta && c.Cuenta.toString().includes(val))
             ).slice(0, 5); 
 
             if (filtered.length > 0) {
@@ -212,15 +212,15 @@
                     const d = calcularDistancia(BASE_COORDS[0], BASE_COORDS[1], c.Latitud, c.Longitud);
                     const clientData = encodeURIComponent(JSON.stringify(c));
                     
-                    // CORRECCIÓN: Manejo resiliente si el código 'Cliente' está vacío en la nueva tabla
-                    const codigoCliente = c.Cliente ? c.Cliente : "N/A";
+                    // AJUSTE: Obtiene de forma resiliente el identificador de cuenta disponible
+                    const idComercial = c.Cuenta || c.Cliente || "N/A";
                     
                     return `
                     <div class="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-none transition-colors flex justify-between items-center" 
                          onclick="seleccionarDesdeBusqueda('${clientData}', ${d})">
                         <div>
                             <p class="text-sm font-bold text-blue-900 truncate max-w-[200px]">${c.Nombre}</p>
-                            <p class="text-[10px] text-slate-400 uppercase">Cód: ${codigoCliente}</p>
+                            <p class="text-[10px] text-slate-400 uppercase">Cód: ${idComercial}</p>
                         </div>
                         <span class="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">${d} km</span>
                     </div>
@@ -231,16 +231,16 @@
             }
         });
 
-        window.onload = () => {
-            initMap();
-            loadData();
-        };
-
         window.seleccionarDesdeBusqueda = function(clientDataEncoded, distancia) {
             const client = JSON.parse(decodeURIComponent(clientDataEncoded));
             resultsList.classList.add('hidden');
             searchInput.value = '';
             mostrarInfoLogistica(client, distancia);
+        };
+
+        window.onload = () => {
+            initMap();
+            loadData();
         };
     </script>
 </body>
