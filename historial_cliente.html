@@ -148,9 +148,12 @@
         let chartHistorialInstance = null;
 
         window.onload = () => {
+            // SE OMITIÓ EL DELIMITADOR PARA QUE PAPA PARSE LO DETECTE AUTOMÁTICAMENTE (COMA O PUNTO Y COMA)
             Papa.parse("ventas_con_clientes.csv", {
-                download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
-                delimiter: ";",
+                download: true, 
+                header: true, 
+                dynamicTyping: true, 
+                skipEmptyLines: true,
                 complete: function(results) {
                     datosCompletos = results.data.map(d => {
                         let fechaRef = d.Fecha || d.EVENTO || d.Fecha_alta;
@@ -168,17 +171,16 @@
                         };
                     }).filter(d => d.Nombre && d.m2 > 0 && d.EVENTO);
 
-                    let clis = [...new Set(datosCompletos.map(d => d.Nombre.trim()))].sort();
+                    // EXTRAER LISTA ÚNICA DE CLIENTES Y POBLAR EL SELECT
+                    let clis = [...new Set(datosCompletos.map(d => d.Nombre))].sort();
                     const selector = document.getElementById('filtroCliente');
                     
-                    // Llenado dinámico del scroll selector
                     clis.forEach(c => {
                         selector.innerHTML += `<option value="${c}">${c}</option>`;
                     });
                 }
             });
             
-            // MODIFICACIÓN: Al ser un select, escucha cambios mediante el evento 'change'
             document.getElementById('filtroCliente').addEventListener('change', actualizarDashboard);
         };
 
@@ -187,6 +189,7 @@
             if(!val) return;
             
             datosClienteActual = datosCompletos.filter(d => d.Nombre.toUpperCase().trim() === val).sort((a,b) => new Date(b.EVENTO) - new Date(a.EVENTO));
+            
             if (datosClienteActual.length > 0) {
                 renderKPIs(datosClienteActual);
                 renderTabla(datosClienteActual);
@@ -235,7 +238,7 @@
                     <td class="p-5 font-bold text-slate-400">${d.DESARME || '-'}</td>
                     <td class="p-5 uppercase font-bold text-slate-500">${d.Ubicación || '-'}</td>
                     <td class="p-5 text-center"><span class="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-xl font-black uppercase text-[10px] tracking-wider border border-blue-100">${d.Modelo}</span></td>
-                    <td class="p-5 font-black text-blue-900 text-right text-base">${parseFloat(d.m2).toLocaleString()}</td>
+                    <td class="p-5 font-black text-blue-900 text-right text-base">${parseFloat(d.m2).toLocaleString('es-AR')}</td>
                 </tr>`).join('');
         }
 
