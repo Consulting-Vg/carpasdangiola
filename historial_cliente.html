@@ -17,6 +17,7 @@
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
+        /* Animaciones */
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate-report { animation: slideUp 0.4s ease-out forwards; }
         
@@ -44,7 +45,7 @@
             </div>
             
             <div class="w-full md:w-1/2">
-                <input list="listaClientes" id="filtroCliente" placeholder="BUSCAR POR NOMBRE COMERCIAL..." class="w-full border-2 border-slate-200 rounded-[1.5rem] px-6 py-4 text-lg font-black text-blue-900 bg-white shadow-2xl focus:border-blue-600 focus:outline-none transition-all placeholder:text-slate-300 uppercase">
+                <input list="listaClientes" id="filtroCliente" placeholder="BUSCAR RAZÓN SOCIAL..." class="w-full border-2 border-slate-200 rounded-[1.5rem] px-6 py-4 text-lg font-black text-blue-900 bg-white shadow-2xl focus:border-blue-600 focus:outline-none transition-all placeholder:text-slate-300 uppercase">
                 <datalist id="listaClientes"></datalist>
             </div>
         </div>
@@ -53,49 +54,61 @@
             <div id="kpiAlarma" class="glass-panel rounded-[2rem] p-7 flex flex-col justify-center min-h-[150px] transition-all duration-500">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado de Cuenta</p>
                 <p class="text-5xl font-black" id="txtDiasInactivo">-</p>
-                <p class="text-[11px] font-bold mt-1 opacity-70 uppercase" id="lblDiasInactivo">Días Inactivo (Hoy - Últ. Fecha)</p>
+                <p class="text-[11px] font-bold mt-1 opacity-70 uppercase" id="lblDiasInactivo">Días Inactivo</p>
             </div>
             <div class="glass-panel rounded-[2rem] p-7 flex flex-col justify-center">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Volumen Acumulado</p>
                 <p class="text-4xl font-black text-blue-900" id="kpiTotalM2">0</p>
-                <p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-tighter">m² Totales</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-tighter">m² Históricos registrados</p>
             </div>
             <div class="glass-panel rounded-[2rem] p-7 flex flex-col justify-center">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estructura Frecuente</p>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Producto Preferente</p>
                 <p class="text-xl font-black text-blue-900 truncate" id="kpiModeloFav">-</p>
-                <p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-tighter">Modelo Principal</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-tighter">Estructura más vendida</p>
             </div>
-            <div class="bg-blue-950 rounded-[2.5rem] p-10 text-white shadow-2xl flex flex-col justify-between items-start relative overflow-hidden group">
-                <button onclick="ejecutarAnalisisAvanzadoIA()" class="w-full h-full flex flex-col items-center justify-center space-y-2">
-                    <div class="bg-blue-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <span class="text-sm font-black uppercase tracking-widest">Auditoría IA</span>
-                </button>
+            <div class="glass-panel rounded-[2rem] p-7 flex flex-col justify-center">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estrategia Comercial</p>
+                <p class="text-xl font-black text-blue-900 truncate" id="kpiVendedorFav">-</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-tighter" id="txtSubVendedores">Gestor de cuenta</p>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-            <div class="lg:col-span-3 glass-panel rounded-[2.5rem] p-10">
+            <div class="lg:col-span-2 glass-panel rounded-[2.5rem] p-10">
                 <div class="flex items-center justify-between mb-8">
                     <h3 class="text-sm font-black text-blue-900 uppercase tracking-[0.2em]">Frecuencia de Contratación Mensual</h3>
+                    <span class="text-[10px] bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-black uppercase">Histórico de Eventos</span>
                 </div>
                 <div class="relative h-72 w-full"><canvas id="chartHistorial"></canvas></div>
+            </div>
+            
+            <div class="bg-blue-950 rounded-[2.5rem] p-10 text-white shadow-2xl flex flex-col justify-between items-start relative overflow-hidden group">
+                <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-900 rounded-full opacity-20 group-hover:scale-110 transition-transform duration-700"></div>
+                <div class="relative z-10">
+                    <div class="bg-blue-600 p-4 rounded-2xl inline-block mb-6 shadow-xl">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black leading-tight mb-4 uppercase tracking-tighter">Auditoría IA<br>Predictiva</h2>
+                    <p class="text-blue-200 text-sm font-medium leading-relaxed">Ejecuta el análisis de ciclo de vida del cliente, detecta riesgos de fuga y optimiza los tiempos de armado.</p>
+                </div>
+                <button onclick="ejecutarAnalisisAvanzadoIA()" class="w-full bg-white text-blue-950 font-black py-5 rounded-2xl hover:bg-blue-50 transition-all shadow-lg active:scale-95 uppercase tracking-widest text-xs mt-8 relative z-10">
+                    Generar Auditoría Senior
+                </button>
             </div>
         </div>
 
         <div class="glass-panel rounded-[2.5rem] p-10">
-            <h3 class="text-sm font-black text-blue-900 uppercase tracking-[0.2em] mb-8 text-center">Registro Operativo Detallado</h3>
+            <h3 class="text-sm font-black text-blue-900 uppercase tracking-[0.2em] mb-8 text-center">Registro Operativo de Estructuras</h3>
             <div class="overflow-x-auto overflow-y-auto max-h-[500px] custom-scrollbar rounded-2xl border border-slate-100">
                 <table class="w-full text-left border-collapse">
                     <thead class="sticky top-0 z-10 bg-slate-50 text-[10px] text-slate-500 uppercase font-black">
                         <tr>
-                            <th class="p-5">F. Armado</th>
-                            <th class="p-5 text-blue-900">F. Evento</th>
-                            <th class="p-5">F. Desarme</th>
-                            <th class="p-5">Ubicación</th>
-                            <th class="p-5 text-center">Estructura</th>
-                            <th class="p-5 text-right">m²</th>
+                            <th class="p-5 border-b border-slate-100">F. Armado</th>
+                            <th class="p-5 border-b border-slate-100 text-blue-900">F. Evento</th>
+                            <th class="p-5 border-b border-slate-100">F. Desarme</th>
+                            <th class="p-5 border-b border-slate-100">Ubicación</th>
+                            <th class="p-5 border-b border-slate-100 text-center">Modelo</th>
+                            <th class="p-5 border-b border-slate-100 text-right">m²</th>
                         </tr>
                     </thead>
                     <tbody id="tablaVentasBody" class="text-xs text-slate-600 divide-y divide-slate-50 bg-white"></tbody>
@@ -108,7 +121,7 @@
         <div class="glass-modal rounded-[3rem] w-full max-w-5xl overflow-hidden flex flex-col max-h-[92vh]">
             <div id="modalHeader" class="px-10 py-8 flex justify-between items-center text-white transition-colors duration-700">
                 <div class="flex items-center space-x-5">
-                    <div class="bg-white/20 p-3 rounded-2xl">
+                    <div class="bg-white/20 p-3 rounded-2xl shadow-inner">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
                     <div>
@@ -122,28 +135,40 @@
             </div>
             <div class="p-10 md:p-14 overflow-y-auto custom-scrollbar bg-slate-50/50" id="contenidoIA"></div>
             <div class="px-10 py-8 bg-white border-t border-slate-100 flex justify-end">
-                <button onclick="cerrarModalIA()" class="bg-blue-950 text-white font-black py-4 px-12 rounded-[1.5rem] hover:bg-black transition-all uppercase text-xs">Cerrar</button>
+                <button onclick="cerrarModalIA()" class="bg-blue-950 text-white font-black py-4 px-12 rounded-[1.5rem] hover:bg-black transition-all uppercase text-xs tracking-widest shadow-2xl">Cerrar Auditoría</button>
             </div>
         </div>
     </div>
 
     <script>
-        let db = []; 
-        let cur = [];
+        let datosCompletos = [];
+        let datosClienteActual = []; 
         let chartHistorialInstance = null;
 
         window.onload = () => {
             Papa.parse("ventas_con_clientes.csv", {
-                download: true, header: true, dynamicTyping: true, skipEmptyLines: true, 
-                delimiter: ";", 
+                download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                delimiter: ";", // Ajustado para el nuevo delimitador del CSV
                 complete: function(results) {
-                    db = results.data.filter(d => d.Nombre && d.Nombre.toString().trim() !== "");
-                    let clis = [...new Set(db.map(d => d.Nombre.trim()))].sort();
-                    const datalist = document.getElementById('listaClientes');
-                    datalist.innerHTML = "";
-                    clis.forEach(c => {
-                        datalist.innerHTML += `<option value="${c}">`;
-                    });
+                    // Normalización de campos para compatibilidad con el nuevo CSV (Vendedor 1 como principal)
+                    datosCompletos = results.data.map(d => {
+                        let fechaRef = d.Fecha || d.EVENTO || d.Fecha_alta;
+                        if (fechaRef && typeof fechaRef !== 'string') fechaRef = fechaRef.toString();
+                        return {
+                            ...d,
+                            Vendedor: d['Vendedor 1'] ? d['Vendedor 1'].toString().trim() : (d.Vendedor ? d.Vendedor.toString().trim() : ''),
+                            Nombre: d.Nombre ? d.Nombre.toString().trim() : 'Sin Nombre',
+                            Modelo: d.Estructura || d.Modelo || '-',
+                            m2: parseFloat(d['m2 Totales'] || d.m2 || 0),
+                            ARMADO: d.ARMADO || '-',
+                            EVENTO: fechaRef ? fechaRef.trim() : '',
+                            DESARME: d.DESARME || '-',
+                            Ubicación: d.Ubicación || d.Localidad || '-'
+                        };
+                    }).filter(d => d.Nombre && d.m2 > 0 && d.EVENTO);
+
+                    let clis = [...new Set(datosCompletos.map(d => d.Nombre.trim()))].sort();
+                    clis.forEach(c => document.getElementById('listaClientes').innerHTML += `<option value="${c}">`);
                 }
             });
             document.getElementById('filtroCliente').addEventListener('change', actualizarDashboard);
@@ -152,38 +177,34 @@
         function actualizarDashboard() {
             const val = document.getElementById('filtroCliente').value.toUpperCase().trim();
             if(!val) return;
-
-            cur = db.filter(d => d.Nombre.toString().toUpperCase().trim() === val)
-                    .sort((a,b) => new Date(b.Fecha || b.EVENTO) - new Date(a.Fecha || a.EVENTO));
-
-            if (cur.length > 0) {
-                renderKPIs(cur);
-                renderTabla(cur);
-                renderGrafico(cur);
+            datosClienteActual = datosCompletos.filter(d => d.Nombre.toUpperCase().trim() === val).sort((a,b) => new Date(b.EVENTO) - new Date(a.EVENTO));
+            if (datosClienteActual.length > 0) {
+                renderKPIs(datosClienteActual);
+                renderTabla(datosClienteActual);
+                renderGrafico(datosClienteActual);
             }
         }
 
         function renderKPIs(datos) {
-            let m2 = 0; let mods = {};
-            
-            // --- CÁLCULO ESTADO DE CUENTA: HOY - ULTIMA FECHA ---
-            let sortedDates = datos.map(d => new Date(d.Fecha)).filter(d => !isNaN(d)).sort((a,b) => b-a);
-            let ultF = sortedDates[0];
-            let hoy = new Date();
-            let diasI = Math.floor((hoy - ultF) / 86400000);
+            let m2 = 0; let mods = {}; let vends = {};
+            let ultF = new Date(datos[0].EVENTO);
+            let diasI = Math.floor((new Date() - ultF) / 86400000);
 
             datos.forEach(d => {
                 m2 += parseFloat(d.m2) || 0;
-                if(d.Modelo) mods[d.Modelo] = (mods[d.Modelo] || 0) + 1;
+                mods[d.Modelo] = (mods[d.Modelo] || 0) + 1;
+                vends[d.Vendedor] = (vends[d.Vendedor] || 0) + 1;
             });
 
-            document.getElementById('kpiTotalM2').innerText = m2.toLocaleString('es-AR') + " m²";
-            document.getElementById('kpiModeloFav').innerText = Object.keys(mods).length > 0 ? Object.keys(mods).reduce((a,b) => mods[a] > mods[b] ? a : b) : "N/D";
+            document.getElementById('kpiTotalM2').innerText = m2.toLocaleString() + " m²";
+            document.getElementById('kpiModeloFav').innerText = Object.keys(mods).reduce((a,b) => mods[a] > mods[b] ? a : b);
+            let sortedV = Object.keys(vends).sort((a,b) => vends[b] - vends[a]);
+            document.getElementById('kpiVendedorFav').innerText = sortedV[0] || 'Sin Asignar';
+            document.getElementById('txtSubVendedores').innerText = sortedV.length > 1 ? `Lidera equipo de ${vends[sortedV[0]]} cierres` : "Gestor Exclusivo";
             
             const p = document.getElementById('kpiAlarma');
             const tD = document.getElementById('txtDiasInactivo');
-            tD.innerText = (isNaN(diasI) || diasI < 0) ? 0 : diasI;
-            
+            tD.innerText = diasI < 0 ? 0 : diasI;
             if(diasI <= 90) p.className = "bg-emerald-50 border border-emerald-200 rounded-[2rem] p-7 flex flex-col justify-center min-h-[150px]";
             else if(diasI <= 180) p.className = "bg-amber-50 border border-amber-200 rounded-[2rem] p-7 flex flex-col justify-center min-h-[150px]";
             else p.className = "bg-red-50 border border-red-200 rounded-[2rem] p-7 flex flex-col justify-center min-h-[150px] animate-pulse";
@@ -193,23 +214,16 @@
             document.getElementById('tablaVentasBody').innerHTML = datos.map(d => `
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="p-5 font-bold text-slate-400">${d.ARMADO || '-'}</td>
-                    <td class="p-5 font-black text-slate-800">${d.EVENTO || d.Fecha || '-'}</td>
+                    <td class="p-5 font-black text-slate-800">${d.EVENTO}</td>
                     <td class="p-5 font-bold text-slate-400">${d.DESARME || '-'}</td>
                     <td class="p-5 uppercase font-bold text-slate-500">${d.Ubicación || '-'}</td>
-                    <td class="p-5 text-center"><span class="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-xl font-black uppercase text-[10px] tracking-wider border border-blue-100">${d.Modelo || 'N/D'}</span></td>
-                    <td class="p-5 font-black text-blue-900 text-right text-base">${parseFloat(d.m2 || 0).toLocaleString()}</td>
+                    <td class="p-5 text-center"><span class="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-xl font-black uppercase text-[10px] tracking-wider border border-blue-100">${d.Modelo}</span></td>
+                    <td class="p-5 font-black text-blue-900 text-right text-base">${parseFloat(d.m2).toLocaleString()}</td>
                 </tr>`).join('');
         }
 
         function renderGrafico(datos) {
-            let c = {}; 
-            datos.forEach(d => { 
-                let fStr = d.Fecha || d.EVENTO;
-                if(fStr) {
-                    let f = fStr.toString().substring(0, 7); 
-                    c[f] = (c[f] || 0) + 1; 
-                }
-            });
+            let c = {}; datos.forEach(d => { let f = d.EVENTO.substring(0, 7); c[f] = (c[f] || 0) + 1; });
             let labs = Object.keys(c).sort();
             if(chartHistorialInstance) chartHistorialInstance.destroy();
             chartHistorialInstance = new Chart(document.getElementById('chartHistorial').getContext('2d'), {
@@ -220,87 +234,151 @@
         }
 
         // ==========================================
-        // ALGORITMO PREDICTIVO SENIOR v4.0
+        // ALGORITMO PREDICTIVO IA SENIOR v3.0
         // ==========================================
         function ejecutarAnalisisAvanzadoIA() {
+            const cli = document.getElementById('filtroCliente').value.toUpperCase().trim();
             const container = document.getElementById('contenidoIA');
             const header = document.getElementById('modalHeader');
-            if(cur.length === 0) return;
+            if(!cli || datosClienteActual.length === 0) return;
 
             let metrics = {}; 
-            let asc = [...cur].sort((a,b) => new Date(a.Fecha) - new Date(b.Fecha));
-            
-            // --- 1. CÁLCULO DE FRECUENCIA PROMEDIO DE COMPRA ---
-            let diffs = [];
-            for(let i=1; i<asc.length; i++) {
-                let d = Math.floor((new Date(asc[i].Fecha) - new Date(asc[i-1].Fecha)) / 86400000);
-                if(d > 0) diffs.push(d);
-            }
-            let promRec = diffs.length > 0 ? Math.round(diffs.reduce((a,b)=>a+b)/diffs.length) : 0;
-            
-            // --- 2. PREDICCIÓN DE PRÓXIMA VENTA PRODUCTIVA ---
-            let ultFecha = new Date(asc[asc.length-1].Fecha);
-            let pEvento = new Date(ultFecha.getTime() + (promRec * 86400000));
-            
-            let hoy = new Date();
-            let esAlarma = (promRec > 0 && pEvento < hoy);
-            let diasVencimiento = Math.floor((hoy - pEvento) / 86400000);
+            let asc = [...datosClienteActual].sort((a,b) => new Date(a.EVENTO) - new Date(b.EVENTO));
 
-            // --- 3. TIEMPOS TÉCNICOS POR ESTRUCTURA ---
-            cur.forEach(d => {
-                if(!d.Modelo) return;
+            // 1. Análisis Técnico: Días de Armado y Desarme por Estructura
+            datosClienteActual.forEach(d => {
                 if(!metrics[d.Modelo]) metrics[d.Modelo] = { setup: [], breakdown: [], count: 0 };
-                let eventD = new Date(d.EVENTO || d.Fecha);
-                if(d.ARMADO && !isNaN(eventD)) {
-                    let s = Math.floor((eventD - new Date(d.ARMADO)) / 86400000);
-                    if(s >= 0) metrics[d.Modelo].setup.push(s);
+                
+                if(d.ARMADO && d.EVENTO) {
+                    let dSet = Math.floor((new Date(d.EVENTO) - new Date(d.ARMADO)) / 86400000);
+                    if(dSet >= 0) metrics[d.Modelo].setup.push(dSet);
                 }
-                if(d.DESARME && !isNaN(eventD)) {
-                    let b = Math.floor((new Date(d.DESARME) - eventD) / 86400000);
-                    if(b >= 0) metrics[d.Modelo].breakdown.push(b);
+                if(d.DESARME && d.EVENTO) {
+                    let dBreak = Math.floor((new Date(d.DESARME) - new Date(d.EVENTO)) / 86400000);
+                    if(dBreak >= 0) metrics[d.Modelo].breakdown.push(dBreak);
                 }
                 metrics[d.Modelo].count++;
             });
 
+            // 2. Periodicidad y Alarma de Tiempo Pasado
+            let diffs = [];
+            for(let i=1; i<asc.length; i++) {
+                let d = Math.floor((new Date(asc[i].EVENTO) - new Date(asc[i-1].EVENTO)) / 86400000);
+                if(d > 0) diffs.push(d);
+            }
+            let promRec = diffs.length > 0 ? Math.round(diffs.reduce((a,b)=>a+b)/diffs.length) : 180;
+            
+            let pEvento = new Date(asc[asc.length-1].EVENTO);
+            pEvento.setDate(pEvento.getDate() + promRec);
+            
+            let hoy = new Date();
+            let esAlarma = pEvento < hoy;
+            let diasVencimiento = Math.floor((hoy - pEvento) / 86400000);
+
+            // 3. Selección de Estructura Probable y Tiempos de Carga
+            let mods = {}; datosClienteActual.forEach(d => mods[d.Modelo] = (mods[d.Modelo] || 0) + 1);
+            let modFav = Object.keys(mods).reduce((a, b) => mods[a] > mods[b] ? a : b);
+            
+            let promA = (metrics[modFav].setup.length > 0) ? Math.round(metrics[modFav].setup.reduce((a,b)=>a+b)/metrics[modFav].setup.length) : 2;
+            let promD = (metrics[modFav].breakdown.length > 0) ? Math.round(metrics[modFav].breakdown.reduce((a,b)=>a+b)/metrics[modFav].breakdown.length) : 1;
+            
+            let pCarga = new Date(pEvento); pCarga.setDate(pCarga.getDate() - promA);
+
+            // 4. Estética de la Auditoría
             if(esAlarma) {
                 header.className = "px-10 py-8 flex justify-between items-center text-white bg-red-600 transition-colors duration-700";
-                document.getElementById('subtituloModal').innerText = `VENTA VENCIDA: HACE ${diasVencimiento} DÍAS SE SUPERÓ EL CICLO`;
+                document.getElementById('subtituloModal').innerText = `CRÍTICO: GESTIÓN COMERCIAL VENCIDA HACE ${diasVencimiento} DÍAS`;
             } else {
                 header.className = "px-10 py-8 flex justify-between items-center text-white bg-blue-950 transition-colors duration-700";
-                document.getElementById('subtituloModal').innerText = "PROYECCIÓN DE PRÓXIMA OPERACIÓN";
+                document.getElementById('subtituloModal').innerText = "CALENDARIO OPERATIVO EN TIEMPO Y FORMA";
             }
 
+            // 5. Tabla de Rendimientos por Estructura
             let filas = Object.keys(metrics).map(m => {
                 let a = metrics[m].setup.length > 0 ? (metrics[m].setup.reduce((p,c)=>p+c)/metrics[m].setup.length).toFixed(1) : "-";
                 let d = metrics[m].breakdown.length > 0 ? (metrics[m].breakdown.reduce((p,c)=>p+c)/metrics[m].breakdown.length).toFixed(1) : "-";
-                return `<tr class="text-sm border-b border-slate-50"><td class="py-5 font-black text-slate-800 uppercase text-[11px]">${m}</td><td class="py-5 text-center font-black text-indigo-700">${a} días</td><td class="py-5 text-center font-black text-slate-600">${d} días</td><td class="py-5 text-right text-slate-400 font-bold uppercase text-[10px]">${metrics[m].count} registros</td></tr>`;
+                return `
+                <tr class="text-sm border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                    <td class="py-5 font-black text-slate-800 uppercase text-[11px]">${m}</td>
+                    <td class="py-5 text-center"><span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-black">${a} días</span></td>
+                    <td class="py-5 text-center"><span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-black">${d} días</span></td>
+                    <td class="py-5 text-right text-slate-400 font-bold uppercase text-[10px]">${metrics[m].count} cierres</td>
+                </tr>`;
             }).join('');
 
             container.innerHTML = `
                 <div class="space-y-12 animate-report">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        
                         <div class="${esAlarma ? 'alarm-card bg-red-50' : 'bg-blue-900 text-white shadow-blue-900/20'} p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
-                            <h4 class="text-[11px] font-black uppercase tracking-[0.3em] mb-8">Fecha de Recontratación</h4>
-                            <p class="text-6xl font-black tracking-tighter">${promRec > 0 ? pEvento.toLocaleDateString('es-ES', {day:'numeric', month:'long', year:'numeric'}) : 'Datos insuficientes'}</p>
-                            ${esAlarma ? `<div class="mt-6 bg-red-600 text-white p-6 rounded-2xl font-black uppercase text-xs">⚠️ Alerta: El cliente excedió su frecuencia de ${promRec} días.</div>` : 
-                            `<div class="bg-white/10 p-6 rounded-[2rem] border border-white/10 mt-6"><p class="text-sm font-bold">Ciclo Activo: El cliente suele operar cada ${promRec} días.</p></div>`}
+                            <h4 class="text-[11px] font-black uppercase tracking-[0.3em] mb-8 ${esAlarma ? 'text-red-600' : 'text-blue-300'}">Próxima Venta Estimada</h4>
+                            <div class="mb-10">
+                                <p class="text-xs font-bold uppercase opacity-60">Fecha de Recontratación:</p>
+                                <p class="text-6xl font-black tracking-tighter ${esAlarma ? 'text-red-700' : 'text-white'}">${pEvento.toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</p>
+                            </div>
+                            
+                            ${esAlarma ? `
+                                <div class="bg-red-600 text-white p-6 rounded-[2rem] shadow-xl">
+                                    <p class="text-sm font-black uppercase mb-2 flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                        Frecuencia Excedida
+                                    </p>
+                                    <p class="text-xs font-medium leading-relaxed">El cliente ha roto su ciclo de <b>${promRec} días</b>. Es imperativo que el vendedor <b>${document.getElementById('kpiVendedorFav').innerText}</b> realice un contacto de fidelización inmediato.</p>
+                                </div>
+                            ` : `
+                                <div class="bg-white/10 p-6 rounded-[2rem] border border-white/10">
+                                    <p class="text-sm font-bold flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        Plan Operativo: Carga de Estructura el día <b>${pCarga.toLocaleDateString()}</b>.
+                                    </p>
+                                </div>
+                            `}
                         </div>
+
                         <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col justify-center">
-                            <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8 text-center">Analítica de Frecuencia</h4>
+                            <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Consistencia de Cuenta</h4>
                             <div class="space-y-6">
-                                <div class="flex justify-between items-center border-b border-slate-50 pb-4"><span class="text-xs font-bold text-slate-500 uppercase">Intervalo Promedio</span><span class="text-xl font-black text-slate-900">${promRec} días</span></div>
-                                <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-500 uppercase">Días Inactivo Actual</span><span class="text-xl font-black text-red-600">${document.getElementById('txtDiasInactivo').innerText} días</span></div>
+                                <div class="flex justify-between items-center border-b border-slate-50 pb-4">
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Ciclo de Recompra</span>
+                                    <span class="text-xl font-black text-slate-900">${promRec} días</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-slate-50 pb-4">
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Modelo Dominante</span>
+                                    <span class="text-xl font-black text-indigo-600">${modFav}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Ticket m² Promedio</span>
+                                    <span class="text-xl font-black text-slate-900">${(datosClienteActual.reduce((a,b)=>a+(parseFloat(b.m2)||0),0)/datosClienteActual.length).toFixed(0)} m²</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+
                     <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
-                        <h4 class="text-xs font-black text-blue-955 uppercase tracking-[0.3em] mb-8">Matriz de Rendimiento Logístico por Modelo</h4>
-                        <table class="w-full"><thead><tr class="text-[10px] text-slate-400 uppercase font-black border-b border-slate-100"><th class="text-left py-5">Modelo</th><th class="text-center py-5">Antelación Armado</th><th class="text-center py-5">Permanencia Desarme</th><th class="text-right py-5">Soporte</th></tr></thead><tbody>${filas}</tbody></table>
+                        <div class="flex items-center space-x-3 mb-10">
+                            <div class="w-2 h-8 bg-indigo-600 rounded-full"></div>
+                            <h4 class="text-xs font-black text-blue-950 uppercase tracking-[0.3em]">Análisis Técnico de Rendimiento por Estructura</h4>
+                        </div>
+                        <table class="w-full">
+                            <thead>
+                                <tr class="text-[10px] text-slate-400 uppercase font-black border-b border-slate-100">
+                                    <th class="text-left py-5">Estructura / Carpa</th>
+                                    <th class="text-center py-5">Media de Armado</th>
+                                    <th class="text-center py-5">Media de Desarme</th>
+                                    <th class="text-right py-5">Soporte Histórico</th>
+                                </tr>
+                            </thead>
+                            <tbody>${filas}</tbody>
+                        </table>
+                        <div class="mt-8 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <p class="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-wider italic">Nota Técnica: Los promedios de armado consideran el tiempo desde el ingreso a locación hasta el día del evento. Los de desarme desde el día posterior al evento hasta la liberación del remolque.</p>
+                        </div>
                     </div>
                 </div>`;
-            document.getElementById('modalIA').classList.remove('hidden');
+            abrirModalIA();
         }
 
+        function abrirModalIA() { document.getElementById('modalIA').classList.remove('hidden'); }
         function cerrarModalIA() { document.getElementById('modalIA').classList.add('hidden'); }
     </script>
 </body>
