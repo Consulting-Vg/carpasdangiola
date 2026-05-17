@@ -131,7 +131,7 @@
 
     <div id="reportModal" class="no-print">
         <div class="report-page shadow-2xl">
-            <img src="cd.png" alt="Logo" class="absolute top-10 right-10 w-32 h-auto">
+            <img src="cd.png" alt="Logo" class="absolute top-10 right-10 w-32 h-auto" onerror="this.style.display='none'">
             
             <header class="mb-12 border-b pb-8">
                 <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Vigia BI <span class="text-blue-500 text-2xl tracking-normal">Corporate Report</span></h1>
@@ -197,9 +197,25 @@
         const todayRef = new Date("2026-04-12");
 
         Papa.parse("ventas_con_clientes.csv", {
-            download: true, header: true, dynamicTyping: true,
+            download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
             complete: function(r) { 
-                data = r.data.filter(d => d.Nombre || d.m2);
+                // Adaptación de los datos al nuevo formato de CSV
+                data = r.data.map(d => {
+                    let fechaRef = d.Fecha || d.EVENTO || d.Fecha_alta;
+                    if (fechaRef && typeof fechaRef !== 'string') fechaRef = fechaRef.toString();
+                    return {
+                        ...d,
+                        Vendedor: d['Vendedor 1'] ? d['Vendedor 1'].toString().trim() : (d.Vendedor ? d.Vendedor.toString().trim() : ''),
+                        Nombre: d.Nombre ? d.Nombre.toString().trim() : 'Sin Nombre',
+                        Modelo: d.Estructura || d.Modelo || '-',
+                        m2: parseFloat(d['m2 Totales'] || d.m2 || 0),
+                        ARMADO: d.ARMADO || '-',
+                        EVENTO: fechaRef ? fechaRef.trim() : '-',
+                        DESARME: d.DESARME || '-',
+                        Ubicación: d.Ubicación || d.Localidad || '-'
+                    };
+                }).filter(d => d.Nombre !== 'Sin Nombre' && d.m2 > 0);
+                
                 appendAI("Hola Carpas D'Angiola, soy tu asistente de Ventas, ¿con quién hablo??");
             }
         });
@@ -313,9 +329,9 @@
         function mostrarLeadTimesModelos() {
             let res = {};
             data.forEach(d => {
-                if(d.ARMADO && d.DESARME) {
+                if(d.ARMADO && d.DESARME && d.ARMADO !== '-' && d.DESARME !== '-') {
                     let diff = (new Date(d.DESARME) - new Date(d.ARMADO))/86400000;
-                    if(diff > 0) {
+                    if(!isNaN(diff) && diff > 0) {
                         if(!res[d.Modelo]) res[d.Modelo] = {s:0, n:0};
                         res[d.Modelo].s += diff; res[d.Modelo].n++;
                     }
@@ -343,7 +359,7 @@
 
         function ejecutarPredictivoIndividual(nombre) {
             const cData = data.filter(d => d.Nombre.toUpperCase().includes(nombre.toUpperCase()));
-            const dts = cData.map(d => new Date(d.EVENTO)).sort((a,b)=>a-b);
+            const dts = cData.map(d => new Date(d.EVENTO)).filter(d => !isNaN(d)).sort((a,b)=>a-b);
             let diffs = []; for(let i=1; i<dts.length; i++) diffs.push((dts[i]-dts[i-1])/86400000);
             let rec = diffs.length > 0 ? Math.round(diffs.reduce((a,b)=>a+b)/diffs.length) : 180;
             let pEv = new Date(dts[dts.length-1]); pEv.setDate(pEv.getDate() + rec);
@@ -360,7 +376,7 @@
             const totalM2 = data.reduce((s,a)=>s+(a.m2||0),0);
             const clients = [...new Set(data.map(d=>d.Nombre))].length;
             const models = data.reduce((a,c)=>{a[c.Modelo]=(a[c.Modelo]||0)+1; return a;},{});
-            const topModel = Object.entries(models).sort((a,b)=>b[1]-a[1])[0][0];
+            const topModel = Object.keys(models).length > 0 ? Object.entries(models).sort((a,b)=>b[1]-a[1])[0][0] : 'N/A';
 
             // Pareto 80/20
             const clientVol = data.reduce((a,c)=>{a[c.Nombre]=(a[c.Nombre]||0)+(c.m2||0); return a;},{});
@@ -376,23 +392,23 @@
                 <div class="grid grid-cols-4 gap-6">
                     <div class="kpi-card text-center"><p class="text-[10px] font-black text-slate-400 uppercase">VOLUMEN TOTAL</p><p class="text-3xl font-black text-blue-900">${totalM2.toLocaleString()} m²</p></div>
                     <div class="kpi-card text-center"><p class="text-[10px] font-black text-slate-400 uppercase">CARTERA ACTIVA</p><p class="text-3xl font-black text-blue-900">${clients}</p></div>
-                    <div class="kpi-card text-center"><p class="text-[10px] font-black text-slate-400 uppercase">CRECIMIENTO YoY</p><p class="text-3xl font-black text-green-600">+${yoy}%</p></div>
-                    <div class="kpi-card text-center"><p class="text-[10px] font-black text-slate-400 uppercase">PARETO (80/20)</p><p class="text-3xl font-black text-blue-900">${((top20Vol/totalM2)*100).toFixed(0)}%</p></div>
+                    <div class="kpi-card text-center"><p class="text-[10px] font-black text-slate-400 uppercase">CRECIMIENTO YoY</p><p class="text-3xl font-black text-green-600">${yoy !== "N/A" && yoy > 0 ? '+'+yoy : yoy}%</p></div>
+                    <div class="kpi-card text-center"><p class="text-[10px] font-black text-slate-400 uppercase">PARETO (80/20)</p><p class="text-3xl font-black text-blue-900">${totalM2 > 0 ? ((top20Vol/totalM2)*100).toFixed(0) : 0}%</p></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-16">
                     <section>
                         <h2 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">1. Análisis de Volumen de Producto</h2>
                         <div class="text-sm space-y-4 text-slate-600">
-                            <p>El <b>${((models[topModel]/data.length)*100).toFixed(1)}%</b> del inventario en calle corresponde al modelo <b>${topModel}</b>.</p>
-                            <div class="p-6 bg-slate-50 rounded-2xl border text-xs italic font-medium">Insight: La velocidad de rotación de estructuras serie H es un 18% mayor en el polo industrial de Zarate.</div>
+                            <p>El <b>${data.length > 0 ? ((models[topModel]/data.length)*100).toFixed(1) : 0}%</b> del inventario en calle corresponde al modelo <b>${topModel}</b>.</p>
+                            <div class="p-6 bg-slate-50 rounded-2xl border text-xs italic font-medium">Insight: La velocidad de rotación de estructuras es vital para prever inventario disponible.</div>
                         </div>
                     </section>
                     <section>
                         <h2 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">2. Dinámica de Clientes y Churn</h2>
                         <div class="text-sm space-y-4 text-slate-600">
-                            <p>El análisis de concentración indica que el 20% de los clientes genera el <b>${((top20Vol/totalM2)*100).toFixed(0)}%</b> del volumen total de m².</p>
-                            <p>Tasa de Retención: Se observa una frecuencia media de 1.4 eventos anuales por cuenta corporativa.</p>
+                            <p>El análisis de concentración indica que el 20% de los clientes genera el <b>${totalM2 > 0 ? ((top20Vol/totalM2)*100).toFixed(0) : 0}%</b> del volumen total de m².</p>
+                            <p>Tasa de Retención: Es indispensable proteger las cuentas clave que mantienen la base de la pirámide de facturación.</p>
                         </div>
                     </section>
                 </div>
