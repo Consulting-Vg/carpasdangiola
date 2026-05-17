@@ -46,8 +46,9 @@
             </div>
             
             <div class="w-full md:w-1/2">
-                <input list="listaClientes" id="filtroCliente" placeholder="BUSCAR RAZÓN SOCIAL..." class="w-full border-2 border-slate-200 rounded-[1.5rem] px-6 py-4 text-lg font-black text-blue-900 bg-white shadow-2xl focus:border-blue-600 focus:outline-none transition-all placeholder:text-slate-300 uppercase">
-                <datalist id="listaClientes"></datalist>
+                <select id="filtroCliente" class="w-full border-2 border-slate-200 rounded-[1.5rem] px-6 py-4 text-base font-black text-blue-900 bg-white shadow-2xl focus:border-blue-600 focus:outline-none transition-all uppercase appearance-none cursor-pointer">
+                    <option value="" disabled selected>SELECCIONE UNA RAZÓN SOCIAL / CLIENTE...</option>
+                </select>
             </div>
         </div>
 
@@ -168,16 +169,17 @@
                     }).filter(d => d.Nombre && d.m2 > 0 && d.EVENTO);
 
                     let clis = [...new Set(datosCompletos.map(d => d.Nombre.trim()))].sort();
-                    const datalist = document.getElementById('listaClientes');
-                    datalist.innerHTML = "";
+                    const selector = document.getElementById('filtroCliente');
+                    
+                    // Llenado dinámico del scroll selector
                     clis.forEach(c => {
-                        datalist.innerHTML += `<option value="${c}">`;
+                        selector.innerHTML += `<option value="${c}">${c}</option>`;
                     });
                 }
             });
             
-            // Filtro inmediato por evento input para datalist
-            document.getElementById('filtroCliente').addEventListener('input', actualizarDashboard);
+            // MODIFICACIÓN: Al ser un select, escucha cambios mediante el evento 'change'
+            document.getElementById('filtroCliente').addEventListener('change', actualizarDashboard);
         };
 
         function actualizarDashboard() {
