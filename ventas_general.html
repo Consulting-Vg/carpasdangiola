@@ -6,17 +6,12 @@
     <title>Ventas General - Dangiola</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
-        
-        /* Estilo Glassmorphism para los paneles */
         .glass-panel {
             background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(12px);
@@ -24,8 +19,6 @@
             border: 1px solid rgba(226, 232, 240, 0.8);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         }
-
-        /* Scrollbar personalizado */
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -123,7 +116,7 @@
                         </tr>
                     </thead>
                     <tbody id="tablaVentasBody" class="text-sm text-slate-600 divide-y divide-slate-100 bg-white">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -141,10 +134,25 @@
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: true,
-                delimiter: ";", // REPARACIÓN: Se agrega delimitador para el nuevo CSV
                 complete: function(results) {
-                    // REPARACIÓN: Filtramos filas que tengan Nombre (columna clave ahora)
-                    datosCompletos = results.data.filter(d => d.Nombre && d.m2);
+                    // CAPA DE ADAPTACIÓN INTELIGENTE PARA EL NUEVO CSV:
+                    // Mapea los campos nuevos al modelo de datos original sin romper código.
+                    datosCompletos = results.data.map(d => {
+                        let fechaSugerida = d.Fecha || d.EVENTO || d.Fecha_alta;
+                        if (fechaSugerida && typeof fechaSugerida !== 'string') {
+                            fechaSugerida = fechaSugerida.toString();
+                        }
+                        return {
+                            ARMADO: d.ARMADO || '-',
+                            EVENTO: fechaSugerida,
+                            DESARME: d.DESARME || '-',
+                            Nombre: d.Nombre ? d.Nombre.toString() : 'Sin Nombre',
+                            Ubicación: d.Ubicación || d.Localidad || '-',
+                            Modelo: d.Estructura || d.Modelo || 'Sin Modelo',
+                            m2: parseFloat(d['m2 Totales'] || d.m2 || 0)
+                        };
+                    }).filter(d => d.EVENTO && d.m2 > 0);
+
                     configurarFechasPorDefecto();
                 }
             });
@@ -155,8 +163,8 @@
 
         function configurarFechasPorDefecto() {
             if (datosCompletos.length === 0) return;
-            // REPARACIÓN: Usamos Fecha o EVENTO para determinar el rango inicial
-            let fechas = datosCompletos.map(d => new Date(d.Fecha || d.EVENTO).getTime()).filter(t => !isNaN(t));
+            let fechas = datosCompletos.map(d => new Date(d.EVENTO).getTime()).filter(t => !isNaN(t));
+            if (fechas.length === 0) return;
             let maxDate = new Date(Math.max(...fechas));
             document.getElementById('fechaFin').value = maxDate.toISOString().split('T')[0];
             
@@ -177,23 +185,21 @@
             if (end) end.setDate(end.getDate() + 1);
 
             let filtrados = datosCompletos.filter(d => {
-                // REPARACIÓN: Filtro por Nombre insensible a mayúsculas
-                const matchNombre = clienteBuscado === "" || (d.Nombre && d.Nombre.toString().toLowerCase().includes(clienteBuscado));
+                const matchNombre = clienteBuscado === "" || (d.Nombre && d.Nombre.toLowerCase().includes(clienteBuscado));
                 
-                // REPARACIÓN: Filtro de fecha resiliente a campos vacíos
                 let matchFecha = true;
-                const valFecha = d.Fecha || d.EVENTO || d.ARMADO;
-                if (valFecha) {
-                    const dDate = new Date(valFecha);
+                if (d.EVENTO) {
+                    const dDate = new Date(d.EVENTO);
                     if (start && dDate < start) matchFecha = false;
                     if (end && dDate >= end) matchFecha = false;
+                } else {
+                    matchFecha = false;
                 }
                 
                 return matchNombre && matchFecha;
             });
 
-            // REPARACIÓN: Ordenamiento consistente
-            filtrados.sort((a, b) => new Date(b.EVENTO || b.Fecha) - new Date(a.EVENTO || a.Fecha));
+            filtrados.sort((a, b) => new Date(b.EVENTO) - new Date(a.EVENTO));
 
             renderKPIs(filtrados);
             renderTabla(filtrados);
@@ -231,22 +237,28 @@
         }
 
         function renderTabla(datos) {
-            document.getElementById('tablaVentasBody').innerHTML = datos.map(d => `
+            const body = document.getElementById('tablaVentasBody');
+            if (datos.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400 font-bold uppercase">No se encontraron resultados</td></tr>';
+                return;
+            }
+            
+            body.innerHTML = datos.map(d => `
                 <tr class="hover:bg-blue-50/50 transition-colors text-[11px]">
                     <td class="p-3 text-slate-400 font-bold">${d.ARMADO || '-'}</td>
                     <td class="p-3 font-black text-slate-800 bg-blue-50/20">${d.EVENTO || '-'}</td>
                     <td class="p-3 text-slate-400 font-bold">${d.DESARME || '-'}</td>
-                    <td class="p-3 font-black text-blue-900 uppercase">${d.Nombre || '-'}</td>
-                    <td class="p-3">--</td>
+                    <td class="p-3 font-black text-blue-900 uppercase">${d.Nombre}</td>
+                    <td class="p-3 uppercase font-bold text-slate-500">${d.Ubicación || '-'}</td>
                     <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-black uppercase text-[9px] border border-slate-200">${d.Modelo || '-'}</span></td>
                     <td class="p-3 font-black text-blue-600 text-right text-sm">${parseFloat(d.m2 || 0).toLocaleString('es-AR')}</td>
-                </tr>`).join('') || '<tr><td colspan="7" class="p-4 text-center">No hay datos coincidentes</td></tr>';
+                </tr>`).join('');
         }
 
         function renderGraficoEvolucion(datos) {
             let porMes = {};
             datos.forEach(d => {
-                let mes = (d.Fecha || d.EVENTO || "").toString().substring(0, 7);
+                let mes = (d.EVENTO || "").toString().substring(0, 7);
                 if(mes) porMes[mes] = (porMes[mes] || 0) + (parseFloat(d.m2) || 0);
             });
             let labs = Object.keys(porMes).sort();
