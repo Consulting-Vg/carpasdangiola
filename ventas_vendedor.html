@@ -14,7 +14,7 @@
 
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
-        .glass-panel { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .glass-panel { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
         .glass-modal { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
         #mapVendedor { height: 350px; width: 100%; border-radius: 1.5rem; z-index: 1; }
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
@@ -118,7 +118,7 @@
     </main>
 
     <div id="modalIA" class="fixed inset-0 z-[2000] hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md transition-opacity">
-        <div class="glass-modal rounded-[3rem] w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div class="glass-modal rounded-[3rem] w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="bg-blue-950 px-8 py-6 flex justify-between items-center text-white">
                 <div class="flex items-center space-x-4">
                     <div class="bg-blue-600 p-2.5 rounded-xl"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div>
@@ -127,7 +127,7 @@
                 <button onclick="cerrarModalIA()" class="text-white/40 hover:text-white transition-colors"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
             <div class="p-10 overflow-y-auto custom-scrollbar bg-slate-50/30 font-medium leading-relaxed text-slate-700" id="contenidoIA"></div>
-            <div class="px-10 py-8 bg-white border-t border-slate-100 flex justify-end">
+            <div class="px-10 py-6 bg-white border-t border-slate-100 flex justify-end">
                 <button onclick="cerrarModalIA()" class="bg-blue-950 text-white font-black py-4 px-12 rounded-2xl hover:bg-black transition-all uppercase text-xs">Cerrar Informe</button>
             </div>
         </div>
@@ -149,10 +149,23 @@
             initMap();
             Papa.parse("ventas_con_clientes.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true, 
-                delimiter: ";", // CAMBIO: Ahora usa el delimitador de tu nuevo CSV
                 complete: function(results) {
-                    // CAMBIO: Filtrado basado en Nombre y Fecha (nuevos campos)
-                    datosCompletos = results.data.filter(d => d.Nombre && d.m2 && d.Fecha);
+                    // Normalización de campos para compatibilidad con el nuevo CSV y Vendedor 1 como principal
+                    datosCompletos = results.data.map(d => {
+                        let fechaRef = d.Fecha || d.EVENTO || d.Fecha_alta;
+                        if (fechaRef && typeof fechaRef !== 'string') fechaRef = fechaRef.toString();
+                        return {
+                            ...d,
+                            Vendedor: d['Vendedor 1'] ? d['Vendedor 1'].toString().trim() : (d.Vendedor ? d.Vendedor.toString().trim() : ''),
+                            Nombre: d.Nombre ? d.Nombre.toString().trim() : 'Sin Nombre',
+                            Modelo: d.Estructura || d.Modelo || '-',
+                            m2: parseFloat(d['m2 Totales'] || d.m2 || 0),
+                            Fecha: fechaRef ? fechaRef.trim() : '',
+                            ARMADO: d.ARMADO || '-',
+                            EVENTO: d.EVENTO || fechaRef || '-',
+                            DESARME: d.DESARME || '-'
+                        };
+                    }).filter(d => d.Nombre && d.m2 > 0 && d.Fecha);
                     configurarFiltrosIniciales();
                 }
             });
@@ -172,7 +185,7 @@
         function configurarFiltrosIniciales() {
             if (datosCompletos.length === 0) return;
             
-            // Llenar dropdown de vendedores
+            // Llenar vendedores
             let vendedores = [...new Set(datosCompletos.map(d => d.Vendedor ? d.Vendedor.trim() : ""))].filter(v => v !== "").sort();
             vendedores.forEach(v => {
                 let opt = document.createElement('option');
@@ -180,7 +193,7 @@
                 document.getElementById('filtroVendedor').appendChild(opt);
             });
 
-            // Establecer rango de fechas por defecto usando la columna 'Fecha'
+            // Fechas por defecto (Últimos 12 meses basado en columna Fecha)
             let fechas = datosCompletos.map(d => new Date(d.Fecha).getTime()).filter(t => !isNaN(t));
             let maxDate = new Date(Math.max(...fechas));
             document.getElementById('fechaFin').value = maxDate.toISOString().split('T')[0];
@@ -192,17 +205,16 @@
         }
 
         function actualizarDashboard() {
-            const valIn = document.getElementById('fechaInicio').value;
-            const valOut = document.getElementById('fechaFin').value;
+            const fIn = document.getElementById('fechaInicio').value;
+            const fOut = document.getElementById('fechaFin').value;
             const vSel = document.getElementById('filtroVendedor').value;
             const cBusq = document.getElementById('filtroCliente').value.toLowerCase().trim();
             
-            const start = valIn ? new Date(valIn) : null;
-            const end = valOut ? new Date(valOut) : null;
+            const start = fIn ? new Date(fIn) : null;
+            const end = fOut ? new Date(fOut) : null;
             if (end) end.setDate(end.getDate() + 1);
 
             datosActualesFiltrados = datosCompletos.filter(d => {
-                // CAMBIO: Se usa la columna 'Fecha' para el filtro de rango
                 const fData = new Date(d.Fecha);
                 const matchVendedor = (vSel === 'Todos' || d.Vendedor === vSel);
                 const matchCliente = cBusq === "" || d.Nombre.toString().toLowerCase().includes(cBusq);
@@ -309,25 +321,95 @@
                 container.innerHTML = `<p class="text-xs font-bold uppercase text-slate-400">Sin datos para analizar.</p>`;
                 abrirModalIA(); return;
             }
+            
             let total = datosActualesFiltrados.reduce((a,b)=>a+(parseFloat(b.m2)||0),0);
             let prom = total / datosActualesFiltrados.length;
             let mods = {}; datosActualesFiltrados.forEach(d => mods[d.Modelo] = (mods[d.Modelo] || 0) + (parseFloat(d.m2)||0));
-            let mF = Object.entries(mods).sort((a,b)=>b[1]-a[1])[0];
-            
+            let mF = Object.entries(mods).sort((a,b)=>b[1]-a[1])[0] || ["Ninguno", 0];
+
+            // --- ANÁLISIS DE PERIODICIDAD POR CLIENTE ---
+            let datosVendedor = datosCompletos.filter(d => d.Vendedor === v);
+            let clientesMap = {};
+            datosVendedor.forEach(d => {
+                if(!clientesMap[d.Nombre]) clientesMap[d.Nombre] = [];
+                clientesMap[d.Nombre].push(d);
+            });
+
+            let filasClientes = Object.keys(clientesMap).map(nombre => {
+                let compras = clientesMap[nombre].sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
+                let diffs = [];
+                for(let i = 1; i < compras.length; i++) {
+                    let d = Math.floor((new Date(compras[i].Fecha) - new Date(compras[i-1].Fecha)) / 86400000);
+                    if(d > 0) diffs.push(d);
+                }
+                let promedioDias = diffs.length > 0 ? Math.round(diffs.reduce((a,b)=>a+b)/diffs.length) : 0;
+                let ultimaCompra = new Date(compras[compras.length - 1].Fecha);
+                
+                let proximaFechaTxt = "Única Compra";
+                let badgeAlerta = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase">S/D</span>`;
+                
+                if(promedioDias > 0) {
+                    let proximaVenta = new Date(ultimaCompra.getTime() + (promedioDias * 86400000));
+                    proximaFechaTxt = proximaVenta.toLocaleDateString('es-AR', {day: 'numeric', month: 'short', year: 'numeric'});
+                    let hoy = new Date();
+                    if(proximaVenta < hoy) {
+                        let vencido = Math.floor((hoy - proximaVenta) / 86400000);
+                        badgeAlerta = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Vencido ${vencido} d</span>`;
+                    } else {
+                        let faltan = Math.ceil((proximaVenta - hoy) / 86400000);
+                        badgeAlerta = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Faltan ${faltan} d</span>`;
+                    }
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors text-slate-700">
+                        <td class="p-3 font-black text-blue-950 uppercase text-xs truncate max-w-[220px]">${nombre}</td>
+                        <td class="p-3 text-center font-bold">${promedioDias > 0 ? promedioDias + ' días' : 'Sin histórico'}</td>
+                        <td class="p-3 text-center font-medium">${ultimaCompra.toLocaleDateString('es-AR')}</td>
+                        <td class="p-3 text-center font-black text-blue-900">${proximaFechaTxt}</td>
+                        <td class="p-3 text-right">${badgeAlerta}</td>
+                    </tr>
+                `;
+            }).join('');
+
             container.innerHTML = `
-                <div class="space-y-6">
-                    <h3 class="text-lg font-black text-blue-900 uppercase">Perfil: ${v}</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-white p-5 rounded-2xl border border-slate-100">
-                            <p class="text-[10px] font-black text-slate-400 uppercase">Ticket Medio</p>
-                            <p class="text-2xl font-black text-slate-800">${prom.toFixed(0)} m²</p>
-                        </div>
-                        <div class="bg-white p-5 rounded-2xl border border-slate-100">
-                            <p class="text-[10px] font-black text-slate-400 uppercase">Estructura Fuerte</p>
-                            <p class="text-base font-black text-blue-600">${mF[0]}</p>
+                <div class="space-y-8 animate-report">
+                    <div>
+                        <h3 class="text-lg font-black text-blue-955 uppercase mb-3">Auditoría Comercial: ${v}</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                                <p class="text-[10px] font-black text-slate-400 uppercase">Ticket Medio por Contrato</p>
+                                <p class="text-3xl font-black text-slate-800 mt-1">${prom.toFixed(0)} m²</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                                <p class="text-[10px] font-black text-slate-400 uppercase">Estructura más comercializada</p>
+                                <p class="text-2xl font-black text-blue-600 mt-1">${mF[0]}</p>
+                            </div>
                         </div>
                     </div>
-                    <p class="text-sm text-slate-600 font-bold italic">El vendedor muestra una especialización técnica en ${mF[0]}, representando el núcleo de su facturación actual. Se recomienda enfocar su prospección en estructuras de gran envergadura dado su promedio de m² por cierre.</p>
+
+                    <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                        <div class="flex items-center space-x-2 mb-6">
+                            <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                            <h4 class="text-xs font-black text-blue-955 uppercase tracking-widest">Matriz de Periodicidad y Proyección de Recompra</h4>
+                        </div>
+                        <div class="overflow-x-auto overflow-y-auto max-h-[350px] custom-scrollbar rounded-xl border border-slate-100">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="sticky top-0 bg-slate-50 text-[9px] text-slate-400 font-black uppercase border-b border-slate-100">
+                                    <tr>
+                                        <th class="p-3">Razón Social Cliente</th>
+                                        <th class="p-3 text-center">Frecuencia Media</th>
+                                        <th class="p-3 text-center">Último Cierre</th>
+                                        <th class="p-3 text-center text-blue-900">Próxima Venta Estimada</th>
+                                        <th class="p-3 text-right">Estatus Alarma</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 bg-white">
+                                    ${filasClientes || '<tr><td colspan="5" class="p-4 text-center text-slate-400">No hay clientes registrados para este vendedor.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>`;
             abrirModalIA();
         }
