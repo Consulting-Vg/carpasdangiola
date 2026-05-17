@@ -21,12 +21,16 @@
         .kpi-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; }
         .kpi-value { font-size: 2rem; font-weight: 900; color: #1e3a8a; }
         .kpi-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.1em; }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
         @media print {
             body { background: white; }
             .no-print { display: none !important; }
             .glass-card { box-shadow: none; border: 1px solid #ccc; }
             .report-section { page-break-inside: avoid; }
+            /* Expande las tablas con scroll al imprimir para que no se corten datos */
+            .print-expand { max-height: none !important; overflow: visible !important; } 
         }
     </style>
 </head>
@@ -78,7 +82,7 @@
             <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-bl-full opacity-50 -z-10"></div>
             
             <header class="border-b-4 border-blue-900 pb-6 mb-10">
-                <img src="banner.png" alt="Dangiola S.A." class="h-16 mb-6">
+                <img src="banner.png" alt="Dangiola S.A." class="h-16 mb-6" onerror="this.style.display='none'">
                 <h1 class="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-2">Informe Ejecutivo de Operaciones</h1>
                 <p class="text-sm font-bold text-slate-500 uppercase tracking-widest" id="reportSubtitle">Reporte Consolidado</p>
                 <p class="text-xs text-slate-400 mt-2 font-medium" id="reportDate"></p>
@@ -89,16 +93,6 @@
     </main>
 
     <script>
-        /* PROMPT DE INFORME EJECUTIVO INTEGRADO:
-           Análisis operativo y de volumen basado en 6 pilares:
-           1. Volumen (SKU, Mix, Rotación)
-           2. Dinámica de Clientes (Pareto, Retención, Churn)
-           3. Geografía (Penetración, Densidad)
-           4. Productividad (Ratio por Vendedor)
-           5. Logística (OTIF, Lead Times)
-           6. Tendencias (YoY, Estacionalidad)
-        */
-
         let salesData = [];
         let charts = [];
 
@@ -149,21 +143,36 @@
             document.getElementById('reportOutput').style.display = 'block';
             const target = document.getElementById('injectReport');
 
-            // --- CÁLCULOS ---
+            // --- CÁLCULOS PRINCIPALES ---
             const totalM2 = filtered.reduce((s,a)=>s+(a.m2||0),0);
             const events = filtered.length;
             const models = filtered.reduce((a,c)=>{a[c.Modelo]=(a[c.Modelo]||0)+1; return a;},{});
-            const topModel = Object.entries(models).sort((a,b)=>b[1]-a[1])[0][0];
+            const topModel = Object.keys(models).length > 0 ? Object.entries(models).sort((a,b)=>b[1]-a[1])[0][0] : 'N/D';
 
-            // Pareto
-            const clientVol = filtered.reduce((a,c)=>{a[c.Nombre]=(a[c.Nombre]||0)+(c.m2||0); return a;},{});
-            const sortedC = Object.entries(clientVol).sort((a,b)=>b[1]-a[1]);
-            const top20Count = Math.ceil(sortedC.length * 0.2);
-            const top20Vol = sortedC.slice(0, top20Count).reduce((s,a)=>s+a[1],0);
-            const paretoPct = ((top20Vol / totalM2) * 100).toFixed(1);
+            // Pareto & Desglose de Clientes
+            const clientDetails = {};
+            filtered.forEach(c => {
+                if(!clientDetails[c.Nombre]) clientDetails[c.Nombre] = { events: 0, m2: 0 };
+                clientDetails[c.Nombre].events += 1;
+                clientDetails[c.Nombre].m2 += (c.m2 || 0);
+            });
+            
+            const sortedC = Object.entries(clientDetails).sort((a,b)=>b[1].m2 - a[1].m2);
+            const top20Count = Math.max(1, Math.ceil(sortedC.length * 0.2));
+            const top20Vol = sortedC.slice(0, top20Count).reduce((s,a)=>s+a[1].m2,0);
+            const paretoPct = totalM2 > 0 ? ((top20Vol / totalM2) * 100).toFixed(1) : 0;
+
+            // Filas para la nueva tabla de desglose
+            const rowsClientes = sortedC.map(c => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td class="p-3 text-xs font-bold text-slate-700 uppercase">${c[0]}</td>
+                    <td class="p-3 text-xs text-center text-slate-600">${c[1].events}</td>
+                    <td class="p-3 text-xs text-right font-black text-blue-900">${c[1].m2.toLocaleString('es-AR')} m²</td>
+                </tr>
+            `).join('');
 
             // Títulos
-            document.getElementById('reportSubtitle').innerText = `Periodo Analizado: ${from||'Inicio'} al ${to||'Actual'} | Vista: ${client==="ALL"?'Global':client}`;
+            document.getElementById('reportSubtitle').innerText = `Periodo: ${from||'Inicio'} al ${to||'Actual'} | ${seller!=="ALL" ? 'Vendedor: '+seller : 'Vista Global'}`;
             document.getElementById('reportDate').innerText = `Generado el: ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`;
 
             target.innerHTML = `
@@ -175,21 +184,21 @@
                         <div class="kpi-box"><p class="kpi-label">Ticket Medio</p><p class="kpi-value">${(totalM2/events).toFixed(0)}<span class="text-sm">m²</span></p></div>
                         <div class="kpi-box"><p class="kpi-label">Modelo Estrella</p><p class="kpi-value text-xl leading-snug mt-2">${topModel}</p></div>
                     </div>
-                    <p class="text-sm text-slate-600 leading-relaxed font-medium">El periodo analizado registra un volumen neto de <b class="text-slate-900">${totalM2.toLocaleString('es-AR')} m²</b> distribuidos en <b class="text-slate-900">${events} despliegues operativos</b>. El ticket promedio por evento se sitúa en <b>${(totalM2/events).toFixed(0)} m²</b>, indicando un enfoque en estructuras de media/alta capacidad, siendo <b>${topModel}</b> el activo de mayor rotación y rentabilidad implícita del catálogo.</p>
+                    <p class="text-sm text-slate-600 leading-relaxed font-medium">El periodo analizado registra un volumen neto de <b class="text-slate-900">${totalM2.toLocaleString('es-AR')} m²</b> distribuidos en <b class="text-slate-900">${events} despliegues operativos</b>. El ticket promedio por evento se sitúa en <b>${(totalM2/events).toFixed(0)} m²</b>, indicando un enfoque en estructuras de media/alta capacidad, siendo <b>${topModel}</b> el activo de mayor rotación.</p>
                 </div>
 
                 <div class="report-section">
                     <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">2. Dinámica de Clientes y Concentración de Cartera</h3>
                     <div class="flex flex-col md:flex-row gap-8 items-center">
-                        <div class="w-full md:w-2/3 space-y-4 text-sm text-slate-600 leading-relaxed">
-                            <p>Análisis de la regla 80/20 (Ley de Pareto). Hemos evaluado la concentración de facturación en volumen (m²) para medir el riesgo y la fidelización de la cartera activa.</p>
+                        <div class="w-full space-y-4 text-sm text-slate-600 leading-relaxed">
+                            <p>Análisis de la regla 80/20 (Ley de Pareto). Evaluamos la concentración de facturación en volumen (m²) para medir el riesgo y la fidelización de la cartera activa.</p>
                             <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl">
                                 <p class="font-bold text-slate-800">Ratio de Concentración: <span class="text-blue-600 text-lg">${paretoPct}%</span></p>
                                 <p class="text-xs mt-1">El ${paretoPct}% del volumen es traccionado por el 20% de los clientes clave (${top20Count} empresas).</p>
                             </div>
                             <p><b>Top 3 Cuentas Estratégicas (Key Accounts):</b></p>
                             <ul class="list-disc pl-5 font-bold text-slate-800">
-                                ${sortedC.slice(0,3).map(c => `<li>${c[0]} (${c[1].toLocaleString()} m²)</li>`).join('')}
+                                ${sortedC.slice(0,3).map(c => `<li>${c[0]} (${c[1].m2.toLocaleString()} m²)</li>`).join('')}
                             </ul>
                         </div>
                     </div>
@@ -199,7 +208,7 @@
                     <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">3. Mix de Producto (Product Mix & Rotación)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                         <div>
-                            <p class="text-sm text-slate-600 leading-relaxed mb-4">El análisis de rotación de activos demuestra la eficiencia del capital invertido en estructuras. A continuación, el Top 5 de modelos más demandados por cantidad de eventos, representando el "Core" operativo de la compañía.</p>
+                            <p class="text-sm text-slate-600 leading-relaxed mb-4">El análisis de rotación demuestra la eficiencia del capital invertido. A continuación, el Top 5 de modelos más demandados por cantidad de eventos, representando el "Core" operativo.</p>
                             <table class="w-full text-left text-sm border-collapse">
                                 <thead><tr class="border-b border-slate-200 text-xs uppercase text-slate-400"><th class="pb-2">Estructura</th><th class="pb-2 text-right">Eventos</th></tr></thead>
                                 <tbody>
@@ -211,10 +220,29 @@
                     </div>
                 </div>
 
-                <div class="report-section border-none pb-0">
+                <div class="report-section">
                     <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">4. Productividad Comercial (Fuerza de Ventas)</h3>
                     <p class="text-sm text-slate-600 mb-6">Desempeño neto en metros cuadrados traccionados por representante. Visualiza la capacidad de penetración y cierre de contratos grandes.</p>
                     <div class="relative h-64 w-full"><canvas id="chartSellers"></canvas></div>
+                </div>
+
+                <div class="report-section pb-0 border-none">
+                    <h3 class="text-blue-900 font-black text-xs uppercase tracking-widest mb-6 border-b pb-2">5. Desglose Analítico por Cliente</h3>
+                    <p class="text-sm text-slate-600 mb-6 leading-relaxed">Detalle de la composición de la cartera que integra las ventas filtradas. Ordenado por volumen traccionado de mayor a menor.</p>
+                    <div class="overflow-x-auto overflow-y-auto max-h-[400px] print-expand custom-scrollbar rounded-xl border border-slate-200 shadow-sm">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3 text-[10px] uppercase font-black text-slate-500">Razón Social Cliente</th>
+                                    <th class="p-3 text-[10px] uppercase font-black text-slate-500 text-center">Cant. Eventos</th>
+                                    <th class="p-3 text-[10px] uppercase font-black text-slate-500 text-right">Volumen (m²)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white">
+                                ${rowsClientes}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="mt-12 bg-slate-50 p-8 rounded-3xl border border-slate-200">
@@ -268,7 +296,7 @@
 
         function exportarHTML() {
             const content = document.getElementById('reportOutput').innerHTML;
-            const fullHTML = `<html><head><script src="https://cdn.tailwindcss.com"><\/script></head><body class="p-10">${content}</body></html>`;
+            const fullHTML = `<html><head><script src="https://cdn.tailwindcss.com"><\/script><style>@media print { .print-expand { max-height: none !important; overflow: visible !important; } }</style></head><body class="p-10">${content}</body></html>`;
             const blob = new Blob([fullHTML], {type: 'text/html'});
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Informe_Estrategico_Dangiola.html'; a.click();
         }
